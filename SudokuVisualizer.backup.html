@@ -1,0 +1,3097 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sudoku Solver Visualizer</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+   CYBER DARK DESIGN TOKENS (Matching Reference Image)
+═══════════════════════════════════════════════════════════════════ */
+    :root {
+      --bg-app: #080b11;
+      --bg-card: #0e1320;
+      --bg-card-hover: #13192b;
+      --bg-subtle: #0c101d;
+      --border: #1e2640;
+      --border-focus: #334155;
+      --border-thick: #2a3754;
+
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --text-faint: #334155;
+
+      /* Technique Accent Colors */
+      --c-given: #e2e8f0;
+      --c-naked: #2563eb;
+      --c-hidden: #16a34a;
+      --c-guess: #ea580c;
+      --c-contra: #dc2626;
+      --c-back: #9333ea;
+      --c-solved: #10b981;
+
+      /* Card Tints */
+      --t-guess: #ea580c;
+      --t-naked: #2563eb;
+      --t-hidden: #16a34a;
+      --t-back: #7e22ce;
+      --t-contra: #b91c1c;
+
+      /* Buttons */
+      --btn-blue: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      --btn-purple: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      --btn-teal: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+
+      --radius-card: 14px;
+      --radius-cell: 6px;
+      --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   HEADER BAR
+═══════════════════════════════════════════════════════════════════ */
+    header {
+      background: rgba(14, 19, 32, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      user-select: none;
+    }
+
+    .logo-icon-grid {
+      width: 32px;
+      height: 32px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 3px;
+      padding: 5px;
+      box-shadow: 0 0 15px rgba(37, 99, 235, 0.25);
+    }
+
+    .logo-dot {
+      border-radius: 2px;
+      background: #38bdf8;
+    }
+
+    .logo-dot:nth-child(even) {
+      background: #818cf8;
+    }
+
+    .logo-dot:nth-child(5) {
+      background: #c084fc;
+    }
+
+    .app-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+
+    .title-main {
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .title-sub {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #818cf8;
+      background: rgba(129, 140, 248, 0.12);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid rgba(129, 140, 248, 0.25);
+      white-space: nowrap;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 1rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+
+    .btn-header:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .btn-header:active {
+      transform: translateY(0);
+    }
+
+    .btn-blue {
+      background: var(--btn-blue);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-purple {
+      background: var(--btn-purple);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+    }
+
+    .btn-teal {
+      background: var(--btn-teal);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+
+    .btn-amber {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      cursor: pointer;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .header-right:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: #334155;
+    }
+
+    .diff-bars-icon {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 18px;
+    }
+
+    .diff-bar {
+      width: 4px;
+      border-radius: 1px;
+      background: #334155;
+    }
+
+    .diff-bar:nth-child(1) {
+      height: 6px;
+    }
+
+    .diff-bar:nth-child(2) {
+      height: 11px;
+    }
+
+    .diff-bar:nth-child(3) {
+      height: 16px;
+    }
+
+    .diff-bar.active {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+
+    .diff-text-group {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+
+    .diff-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .diff-sub {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   MAIN 2-COLUMN VIEWPORT
+═══════════════════════════════════════════════════════════════════ */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 2rem;
+      display: grid;
+      grid-template-columns: 500px 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        grid-template-columns: 1fr;
+        max-width: 600px;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   CARD BASE STYLING
+═══════════════════════════════════════════════════════════════════ */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 1.1rem 1.25rem;
+      box-shadow: var(--shadow-card);
+      position: relative;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+
+    .card-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .card-meta-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .icon-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   LEFT: SUDOKU BOARD CARD
+═══════════════════════════════════════════════════════════════════ */
+    .board-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .board-card-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Grid Coordinates Wrapper */
+    .board-coords-wrapper {
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    .col-coords {
+      display: grid;
+      grid-template-columns: 24px repeat(9, 1fr);
+      width: 100%;
+      margin-bottom: 4px;
+    }
+
+    .col-coords span {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .row-and-grid {
+      display: flex;
+      align-items: stretch;
+    }
+
+    .row-coords {
+      width: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      padding-right: 6px;
+    }
+
+    .row-coords span {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: right;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    /* 9x9 Sudoku Grid */
+    #sudoku-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 44px);
+      grid-template-rows: repeat(9, 44px);
+      background: var(--bg-subtle);
+      border: 2px solid var(--border-thick);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+    }
+
+    @media (max-width: 520px) {
+      #sudoku-grid {
+        grid-template-columns: repeat(9, 36px);
+        grid-template-rows: repeat(9, 36px);
+      }
+
+      .row-coords span {
+        height: 36px;
+      }
+    }
+
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-subtle);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: default;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+      box-sizing: border-box;
+    }
+
+    /* 3x3 Box Borders */
+    .cell:nth-child(3n) {
+      border-right: 2px solid var(--border-thick);
+    }
+
+    .cell:nth-child(9n) {
+      border-right: none;
+    }
+
+    .cell[data-row="2"],
+    .cell[data-row="5"] {
+      border-bottom: 2px solid var(--border-thick);
+    }
+
+    .cell[data-row="8"] {
+      border-bottom: none;
+    }
+
+    /* Placed Digits Blocks (Solid Colors from Image) */
+    .cell.ev-guess {
+      background: var(--t-guess) !important;
+      color: #ffffff !important;
+    }
+
+    .cell.ev-naked {
+      background: var(--t-naked) !important;
+      color: #ffffff !important;
+    }
+
+    .cell.ev-hidden {
+      background: var(--t-hidden) !important;
+      color: #ffffff !important;
+    }
+
+    .cell.ev-backtrack {
+      background: var(--t-back) !important;
+      color: #ffffff !important;
+    }
+
+    .cell.ev-contra {
+      background: var(--t-contra) !important;
+      color: #ffffff !important;
+    }
+
+    .cell.ev-solved {
+      background: var(--c-solved) !important;
+      color: #ffffff !important;
+    }
+
+    /* Unit Tint (for Hidden Singles scan) */
+    .cell.unit-tint {
+      background: rgba(99, 102, 241, 0.22) !important;
+    }
+
+    /* Active Ring */
+    .cell.active-cell::after {
+      content: '';
+      position: absolute;
+      inset: 1px;
+      border: 2px solid #38bdf8;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Pencil Marks Inside Cell */
+    .pencil-wrap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      padding: 1px;
+    }
+
+    .pencil-mark {
+      font-size: 0.55rem;
+      font-weight: 500;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.75;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   BOARD CONTROLS (Under Grid)
+═══════════════════════════════════════════════════════════════════ */
+    .board-controls {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    /* Scrubber Line */
+    .scrubber-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      width: 100%;
+    }
+
+    #scrubber {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      border-radius: 99px;
+      background: #1e2640;
+      outline: none;
+      cursor: pointer;
+      border: none;
+    }
+
+    #scrubber::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+      cursor: pointer;
+    }
+
+    /* Playback Toolbar */
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .transport-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #090d18;
+      border: 1px solid var(--border);
+      padding: 3px 6px;
+      border-radius: 30px;
+    }
+
+    .btn-transport {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-transport:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .btn-transport.play-main {
+      background: #2563eb;
+      color: #ffffff;
+      width: 32px;
+      height: 32px;
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn-transport.play-main:hover {
+      background: #1d4ed8;
+      transform: scale(1.04);
+    }
+
+    .skip-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .btn-pill {
+      background: #090d18;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      padding: 0.38rem 0.8rem;
+      font-size: 0.74rem;
+      font-weight: 600;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .btn-pill:hover {
+      border-color: #38bdf8;
+      color: #ffffff;
+      background: rgba(56, 189, 248, 0.06);
+    }
+
+    /* Speed and Settings Row */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.76rem;
+      color: var(--text-dim);
+      padding: 0.2rem 0;
+      flex-wrap: wrap;
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .speed-icon {
+      font-size: 0.95rem;
+    }
+
+    #speed-slider {
+      width: 90px;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #4f46e5 0%, #38bdf8 100%);
+      outline: none;
+      cursor: pointer;
+    }
+
+    #speed-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+      cursor: pointer;
+    }
+
+    /* Switch Toggle (iOS style) */
+    .switch-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .switch-box {
+      position: relative;
+      width: 32px;
+      height: 18px;
+      background: #1e2640;
+      border-radius: 99px;
+      transition: background 0.2s;
+    }
+
+    .switch-box::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      transition: transform 0.2s;
+    }
+
+    input[type="checkbox"]:checked+.switch-box {
+      background: #2563eb;
+    }
+
+    input[type="checkbox"]:checked+.switch-box::after {
+      transform: translateX(14px);
+    }
+
+    .step-counter-text {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Legend */
+    .legend-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   RIGHT COLUMN: CURRENT STEP & DUAL SPLIT CARDS
+═══════════════════════════════════════════════════════════════════ */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Current Step Card (Fixed height prevents moving Call Stack & Step Feed below) */
+    .step-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      height: 250px;
+      min-height: 250px;
+      max-height: 250px;
+      box-sizing: border-box;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: 20px;
+      color: #ffffff;
+      width: fit-content;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    .step-desc {
+      font-size: 0.83rem;
+      line-height: 1.55;
+      color: #cbd5e1;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-thick) transparent;
+    }
+
+    .step-desc::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .step-desc::-webkit-scrollbar-thumb {
+      background: var(--border-thick);
+      border-radius: 99px;
+    }
+
+    .step-desc p {
+      margin-bottom: 0.45rem;
+    }
+
+    .step-desc p:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-desc b,
+    .step-desc strong {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .step-desc em {
+      color: #38bdf8;
+      font-style: normal;
+    }
+
+    /* Depth Indicator */
+    .depth-indicator-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-top: 0.35rem;
+    }
+
+    .depth-pips-list {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .depth-pip {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #1e2640;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .depth-pip.active {
+      background: #ea580c;
+      box-shadow: 0 0 6px rgba(234, 88, 12, 0.7);
+    }
+
+    .depth-label-text {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   SPLIT BOTTOM: CALL STACK & STEP FEED SIDE BY SIDE
+═══════════════════════════════════════════════════════════════════ */
+    .split-bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .split-bottom-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Call Stack Container */
+    #stack-container {
+      max-height: 380px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-thick) transparent;
+    }
+
+    #stack-container::-webkit-scrollbar,
+    #step-log::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    #stack-container::-webkit-scrollbar-track,
+    #step-log::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #stack-container::-webkit-scrollbar-thumb,
+    #step-log::-webkit-scrollbar-thumb {
+      background: var(--border-thick);
+      border-radius: 99px;
+    }
+
+    .stack-empty {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding: 1.25rem 0.5rem;
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .stack-frame-card {
+      background: #090d18;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      flex-shrink: 0;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      cursor: pointer;
+    }
+
+    .stack-frame-card:hover {
+      border-color: #38bdf8;
+    }
+
+    .stack-frame-card.frame-active {
+      border-color: #ea580c;
+      box-shadow: 0 0 12px rgba(234, 88, 12, 0.25);
+    }
+
+    .frame-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .frame-top-left {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .frame-depth-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.12rem 0.38rem;
+      border-radius: 4px;
+      color: #ffffff;
+    }
+
+    .frame-cell-text {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .frame-active-tag {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: #ea580c;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .frame-card-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 0.35rem;
+      padding-top: 0.3rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .metric-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-label {
+      font-size: 0.58rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .metric-val {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .metric-val.rem-active {
+      color: #38bdf8;
+    }
+
+    .metric-val.rem-none {
+      color: var(--text-muted);
+    }
+
+    /* Step Feed Container */
+    #step-log {
+      max-height: 380px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-thick) transparent;
+    }
+
+    .feed-row-card {
+      background: #090d18;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.45rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .feed-row-card:hover {
+      background: var(--bg-card-hover);
+      border-color: #334155;
+    }
+
+    .feed-row-card.current {
+      border-color: #ea580c;
+      background: rgba(234, 88, 12, 0.06);
+      box-shadow: 0 0 10px rgba(234, 88, 12, 0.2);
+    }
+
+    .feed-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .feed-left-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .feed-step-num {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .feed-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.1rem 0.38rem;
+      border-radius: 4px;
+      color: #ffffff;
+    }
+
+    .feed-cell-target {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .feed-timestamp {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .feed-bottom-text {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      padding-left: 0.1rem;
+      line-height: 1.35;
+    }
+
+    .feed-row-card.current .feed-bottom-text {
+      color: #f1f5f9;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   DROPDOWNS & MODALS
+═══════════════════════════════════════════════════════════════════ */
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 6px;
+      background: #0e1320;
+      border: 1px solid #2e3b5e;
+      border-radius: 10px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+      padding: 0.5rem;
+      min-width: 280px;
+      display: none;
+      flex-direction: column;
+      gap: 0.25rem;
+      z-index: 200;
+    }
+
+    .dropdown-menu.open {
+      display: flex;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      text-align: left;
+      font-size: 0.8rem;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .dropdown-item:hover {
+      background: #1e2640;
+    }
+
+    .dropdown-item-desc {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      display: block;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: #0e1320;
+      border: 1px solid #2e3b5e;
+      border-radius: 14px;
+      padding: 1.5rem;
+      width: min(500px, calc(100vw - 2rem));
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6);
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+    }
+
+    .modal h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.85rem;
+      color: #ffffff;
+    }
+
+    .modal label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    .modal input[type="text"],
+    .modal textarea {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #090d18;
+      color: #ffffff;
+      font-size: 0.84rem;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 0.75rem;
+    }
+
+    .modal textarea {
+      min-height: 80px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    /* Edit Mode Overlay */
+    .cell.edit-mode {
+      cursor: pointer;
+      outline: 2px dashed #38bdf8;
+      outline-offset: -2px;
+    }
+
+    .cell.edit-conflict {
+      outline-color: var(--c-contra) !important;
+      background: rgba(220, 38, 38, 0.25) !important;
+    }
+
+    /* Notice Bar */
+    #notice-bar {
+      padding: 0.4rem 1.5rem;
+      font-size: 0.8rem;
+      text-align: center;
+      display: none;
+      font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   FOOTER & AUTHORS BAR
+═══════════════════════════════════════════════════════════════════ */
+    footer {
+      background: #090d18;
+      border-top: 1px solid var(--border);
+      padding: 0.85rem 2rem;
+      margin-top: auto;
+    }
+
+    .footer-wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.76rem;
+    }
+
+    .footer-project-title {
+      color: #f1f5f9;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .footer-copy {
+      color: var(--text-muted);
+    }
+
+    .footer-authors-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.45rem 1rem;
+      background: #0e1320;
+      border: 1px solid #2e3b5e;
+      border-radius: 30px;
+      color: #ffffff;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .footer-authors-trigger:hover {
+      background: #1e2640;
+      border-color: #38bdf8;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .authors-badge {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .authors-names {
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .authors-view-link {
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 0.74rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+   AUTHORS & PROJECT CREDITS MODAL
+═══════════════════════════════════════════════════════════════════ */
+    .modal-lg {
+      width: min(840px, calc(100vw - 2rem));
+      max-width: 840px;
+    }
+
+    .authors-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.85rem;
+    }
+
+    .authors-modal-title-group h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.2rem;
+    }
+
+    .authors-modal-sub {
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: #94a3b8;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    .quote-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      background: rgba(129, 140, 248, 0.08);
+      border: 1px solid rgba(129, 140, 248, 0.2);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.84rem;
+      color: #c7d2fe;
+      font-style: italic;
+    }
+
+    .authors-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 760px) {
+      .authors-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .author-card {
+      background: #090d18;
+      border: 1px solid #1e2640;
+      border-radius: 10px;
+      padding: 1rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .author-card:hover {
+      transform: translateY(-2px);
+      border-color: #38bdf8;
+    }
+
+    .author-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .author-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+    }
+
+    .author-name-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .author-num-tag {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: #f59e0b;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .author-name {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .author-role {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .author-desc {
+      font-size: 0.74rem;
+      line-height: 1.5;
+      color: #94a3b8;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 0.6rem;
+    }
+
+    .project-details-box {
+      background: #090d18;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .project-details-header {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+
+    .project-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.4rem 1rem;
+      font-size: 0.76rem;
+      color: #cbd5e1;
+    }
+
+    .project-metrics-grid b {
+      color: #ffffff;
+    }
+
+    .copyright-legal-bar {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 0.65rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="notice-bar"></div>
+
+  <!-- ══════════════════════ HEADER BAR ══════════════════════ -->
+  <header>
+    <div class="header-left">
+      <div class="logo-icon-grid">
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+        <div class="logo-dot"></div>
+      </div>
+      <div class="app-title-group">
+        <span class="title-main">SUDOKU SOLVER</span>
+        <span class="title-sub">VISUALIZER</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div style="position: relative;">
+        <button id="btn-load-trigger" class="btn-header btn-blue">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Load Puzzle
+        </button>
+        <div class="dropdown-menu" id="puzzle-dropdown">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <button id="btn-edit" class="btn-header btn-purple">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        Edit
+      </button>
+
+      <button id="btn-manage-saved" class="btn-header btn-teal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        My Puzzles
+      </button>
+
+      <button id="btn-authors-header" class="btn-header btn-amber" title="Project research authors and credits">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Authors
+      </button>
+    </div>
+
+    <div class="header-right" id="diff-widget" title="Click to choose a puzzle">
+      <div class="diff-bars-icon" id="diff-bars">
+        <div class="diff-bar active"></div>
+        <div class="diff-bar active"></div>
+        <div class="diff-bar"></div>
+      </div>
+      <div class="diff-text-group">
+        <div class="diff-title" id="diff-name">Medium</div>
+        <div class="diff-sub" id="diff-sub">Needs hidden singles</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════ MAIN 2-COLUMN VIEWPORT ══════════════════════ -->
+  <main>
+    <!-- LEFT COLUMN: SUDOKU BOARD CARD -->
+    <div class="card board-card">
+      <div class="board-card-header">
+        <div class="card-label">SUDOKU BOARD</div>
+        <button class="icon-btn" id="btn-info-board" title="Board info">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Board with Coordinates -->
+      <div class="board-coords-wrapper">
+        <div class="col-coords">
+          <span></span>
+          <span>1</span><span>2</span><span>3</span>
+          <span>4</span><span>5</span><span>6</span>
+          <span>7</span><span>8</span><span>9</span>
+        </div>
+        <div class="row-and-grid">
+          <div class="row-coords">
+            <span>1</span><span>2</span><span>3</span>
+            <span>4</span><span>5</span><span>6</span>
+            <span>7</span><span>8</span><span>9</span>
+          </div>
+          <div id="sudoku-grid"></div>
+        </div>
+      </div>
+
+      <!-- Controls Beneath Board -->
+      <div class="board-controls">
+        <!-- Scrubber Line -->
+        <div class="scrubber-bar-row">
+          <input type="range" id="scrubber" min="0" max="0" value="0">
+        </div>
+
+        <!-- Playback Bar -->
+        <div class="toolbar-row">
+          <div class="transport-group">
+            <button class="btn-transport" id="btn-start" title="First step (Home)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+              </svg>
+            </button>
+            <button class="btn-transport" id="btn-back" title="Step back (←)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11 18V6l-8.5 6zm.5-6l8.5 6V6z" />
+              </svg>
+            </button>
+            <button class="btn-transport play-main" id="btn-play" title="Play / Pause (Space)">
+              <svg id="play-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
+            <button class="btn-transport" id="btn-fwd" title="Step forward (→)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4 18l8.5-6L4 6zm9-12v12l8.5-6z" />
+              </svg>
+            </button>
+            <button class="btn-transport" id="btn-end" title="Last step (End)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 18l8.5-6L6 6zM16 6v12h2V6z" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="skip-btn-group">
+            <button class="btn-pill" id="btn-next-guess" title="Jump to next guess">
+              Next Guess &gt;
+            </button>
+            <button class="btn-pill" id="btn-next-backtrack" title="Jump to next backtrack">
+              Backtrack ↶
+            </button>
+          </div>
+        </div>
+
+        <!-- Speed, Pencil Marks, Step Counter -->
+        <div class="settings-row">
+          <div class="speed-control">
+            <span>Speed</span>
+            <span class="speed-icon">🐢</span>
+            <input type="range" id="speed-slider" min="1" max="8" value="4">
+            <span class="speed-icon">🐇</span>
+          </div>
+
+          <label class="switch-label">
+            <input type="checkbox" id="pencil-toggle" checked style="display:none;">
+            <div class="switch-box"></div>
+            <span>Pencil Marks</span>
+          </label>
+
+          <div class="step-counter-text" id="step-counter-label">
+            Step 0 / 0
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend-section">
+          <div class="legend-row">
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#ffffff;"></div><span>Given</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#2563eb;"></div><span>Naked Single</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#16a34a;"></div><span>Hidden Single</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#ea580c;"></div><span>Guess (MRV)</span>
+            </div>
+          </div>
+          <div class="legend-row">
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#dc2626;"></div><span>Contradiction</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#9333ea;"></div><span>Backtrack</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#10b981;"></div><span>Solved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: CURRENT STEP & DUAL SPLIT CARDS -->
+    <div class="right-col">
+      <!-- 1. Current Step Card -->
+      <div class="card step-card">
+        <div class="card-header-row">
+          <div class="card-label">CURRENT STEP</div>
+          <button class="icon-btn" id="btn-stats-modal" title="View algorithm statistics">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="badge-pill" id="explanation-badge" style="background:#ea580c;">GUESS (MRV)</div>
+        <div class="step-title" id="step-headline">Select or load a puzzle to begin</div>
+        <div class="step-desc" id="explanation-text">
+          <p>Press <strong>▶ Play</strong> or use ← → to step through the solver decisions in real-time.</p>
+        </div>
+
+        <div class="depth-indicator-row">
+          <div class="depth-pips-list" id="depth-pips-container">
+            <div class="depth-pip active"></div>
+            <div class="depth-pip"></div>
+            <div class="depth-pip"></div>
+          </div>
+          <span class="depth-label-text" id="depth-text-label">Depth 0</span>
+        </div>
+      </div>
+
+      <!-- 2. Split Bottom Row: Call Stack & Step Feed side-by-side -->
+      <div class="split-bottom-row">
+        <!-- Sub-card A: Recursive Call Stack -->
+        <div class="card" style="padding: 0.9rem 1rem;">
+          <div class="card-header-row">
+            <div class="card-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="4" y1="6" x2="20" y2="6"></line>
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <line x1="4" y1="18" x2="20" y2="18"></line>
+              </svg>
+              CALL STACK
+            </div>
+            <div class="card-meta-badge" id="stack-frame-count">0 FRAMES</div>
+          </div>
+          <div id="stack-container">
+            <div class="stack-empty">
+              <span>No active guesses</span>
+              <small style="opacity:0.7;">Solving by constraint propagation</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-card B: Step Feed -->
+        <div class="card" style="padding: 0.9rem 1rem;">
+          <div class="card-header-row">
+            <div class="card-label">STEP FEED</div>
+            <div class="card-meta-badge" id="feed-range-label">STEPS 0 OF 0</div>
+          </div>
+          <div id="step-log"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════ FOOTER ══════════════════════ -->
+  <footer>
+    <div class="footer-wrap">
+      <div class="footer-left">
+        <span class="footer-project-title">Generic Sudoku Solver Using Constraint Propagation</span>
+        <span class="footer-copy">Copyright © 2026: All Rights Reserved.</span>
+      </div>
+      <button class="footer-authors-trigger" id="btn-authors-footer"
+        title="Click to view full author and research details">
+        <span class="authors-badge">3 Authors</span>
+        <span class="authors-names">Shivraj Vijay More &nbsp;·&nbsp; Dhanalakshmi Shrimant Kare &nbsp;·&nbsp; Nivedita
+          Sanjay Pawar</span>
+        <span class="authors-view-link">View Details →</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- ══════════════════════ MODALS ══════════════════════ -->
+  <!-- Stats & Info Modal (opened via info icon) -->
+  <div class="modal-backdrop" id="stats-modal">
+    <div class="modal">
+      <h2>Solver Statistics</h2>
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div
+          style="background:#090d18; border:1px solid #1e2640; border-radius:8px; padding:0.6rem; text-align:center;">
+          <div style="font-size:1.3rem; font-weight:800; color:#ffffff;" id="st-place">0</div>
+          <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Placements</div>
+        </div>
+        <div
+          style="background:#090d18; border:1px solid #1e2640; border-radius:8px; padding:0.6rem; text-align:center;">
+          <div style="font-size:1.3rem; font-weight:800; color:#2563eb;" id="st-naked">0</div>
+          <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Naked Singles</div>
+        </div>
+        <div
+          style="background:#090d18; border:1px solid #1e2640; border-radius:8px; padding:0.6rem; text-align:center;">
+          <div style="font-size:1.3rem; font-weight:800; color:#16a34a;" id="st-hidden">0</div>
+          <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Hidden Singles</div>
+        </div>
+        <div
+          style="background:#090d18; border:1px solid #1e2640; border-radius:8px; padding:0.6rem; text-align:center;">
+          <div style="font-size:1.3rem; font-weight:800; color:#ea580c;" id="st-guess">0</div>
+          <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Guesses</div>
+        </div>
+        <div
+          style="background:#090d18; border:1px solid #1e2640; border-radius:8px; padding:0.6rem; text-align:center;">
+          <div style="font-size:1.3rem; font-weight:800; color:#9333ea;" id="st-back">0</div>
+          <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Backtracks</div>
+        </div>
+        <div
+          style="background:#090d18; border:1px solid #1e2640; border-radius:8px; padding:0.6rem; text-align:center;">
+          <div style="font-size:1.3rem; font-weight:800; color:#38bdf8;" id="st-depth">0</div>
+          <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Max Depth</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pill" id="stats-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paste Modal -->
+  <div class="modal-backdrop" id="paste-modal">
+    <div class="modal">
+      <h2>Paste 81-Character Puzzle</h2>
+      <label>Digits 1–9 for clues, <code>0</code> or <code>.</code> for blanks. Whitespace ignored.</label>
+      <textarea id="paste-input" rows="3"
+        placeholder="530070000600195000098000060800060003400803001700020006060000280000419005000080079"></textarea>
+      <div id="paste-error" style="color:#ef4444; font-size:0.78rem; margin-bottom:0.4rem;"></div>
+      <div class="modal-actions">
+        <button class="btn-pill" id="paste-cancel">Cancel</button>
+        <button class="btn-header btn-blue" id="paste-ok">Load Puzzle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Modal -->
+  <div class="modal-backdrop" id="save-modal">
+    <div class="modal">
+      <h2>Save Current Puzzle</h2>
+      <label>Puzzle Name</label>
+      <input type="text" id="save-name" placeholder="My custom puzzle…">
+      <div class="modal-actions">
+        <button class="btn-pill" id="save-cancel">Cancel</button>
+        <button class="btn-header btn-teal" id="save-ok">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Saved Puzzles Modal -->
+  <div class="modal-backdrop" id="manage-modal">
+    <div class="modal">
+      <h2>My Saved Puzzles</h2>
+      <div id="saved-list"
+        style="display:flex; flex-direction:column; gap:0.4rem; max-height:220px; overflow-y:auto; margin-bottom:0.75rem;">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pill" id="btn-save-current" style="margin-right:auto;">+ Save Current</button>
+        <button class="btn-pill" id="manage-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Authors & Research Team Modal -->
+  <div class="modal-backdrop" id="authors-modal">
+    <div class="modal modal-lg">
+      <div class="authors-modal-header">
+        <div class="authors-modal-title-group">
+          <h2>Project Authors &amp; Research Team</h2>
+          <p class="authors-modal-sub">Generic Sudoku Solver Using Constraint Propagation · SudokuSolverOptimized.java
+            (17 Sept 2026)</p>
+        </div>
+        <button class="modal-close-btn" id="authors-modal-close" title="Close">✕</button>
+      </div>
+
+      <div class="quote-banner">
+        <span>🐾</span>
+        <span>&ldquo;A wish once imagined is now becoming a reality &mdash; Kitty🐾&rdquo;</span>
+      </div>
+
+      <div class="authors-grid">
+        <!-- Author 1 -->
+        <div class="author-card">
+          <div class="author-card-header">
+            <div class="author-avatar" style="background: linear-gradient(135deg, #38bdf8, #2563eb);">SM</div>
+            <div class="author-name-group">
+              <span class="author-num-tag">AUTHOR 1</span>
+              <span class="author-name">SHIVRAJ VIJAY MORE</span>
+              <span class="author-role">Lead Algorithm Architect</span>
+            </div>
+          </div>
+          <div class="author-desc">
+            Architected the 64-bit bitmask candidate model, the O(1) doubly linked empty-cell list, the LIFO undo log
+            for recursive backtracking, and generation tracking for worklist deduplication.
+          </div>
+        </div>
+
+        <!-- Author 2 -->
+        <div class="author-card">
+          <div class="author-card-header">
+            <div class="author-avatar" style="background: linear-gradient(135deg, #c084fc, #7c3aed);">DK</div>
+            <div class="author-name-group">
+              <span class="author-num-tag">AUTHOR 2</span>
+              <span class="author-name">DHANALAKSHMI S. KARE</span>
+              <span class="author-role">Constraint Specialist</span>
+            </div>
+          </div>
+          <div class="author-desc">
+            Engineered the seenOnce and seenTwice bitmask detection for Naked &amp; Hidden Singles, precomputed unit
+            cell caches, and filled-peer skipping across rows, columns, and 3×3 boxes.
+          </div>
+        </div>
+
+        <!-- Author 3 -->
+        <div class="author-card">
+          <div class="author-card-header">
+            <div class="author-avatar" style="background: linear-gradient(135deg, #fbbf24, #ea580c);">NP</div>
+            <div class="author-name-group">
+              <span class="author-num-tag">AUTHOR 3</span>
+              <span class="author-name">NIVEDITA S. PAWAR</span>
+              <span class="author-role">Heuristics &amp; Search Engineer</span>
+            </div>
+          </div>
+          <div class="author-desc">
+            Designed the Minimum Remaining Values (MRV) cell-selection heuristic, candidate sorting, contradiction
+            detection, and the live visualizer state snapshot recorder.
+          </div>
+        </div>
+      </div>
+
+      <div class="project-details-box">
+        <div class="project-details-header">TECHNICAL ARCHITECTURE (11 Core Optimizations)</div>
+        <div class="project-metrics-grid">
+          <div><b>1. Candidate Masks:</b> O(1) bitwise tracking</div>
+          <div><b>2. Worklist Propagation:</b> Targeted cell re-checks</div>
+          <div><b>3. Undo Log:</b> O(1) LIFO board restoration</div>
+          <div><b>4. Hidden Singles:</b> seenOnce/seenTwice bitmasks</div>
+          <div><b>5. Live Empty List:</b> Doubly linked O(1) splicing</div>
+          <div><b>6. MRV Selection:</b> Scans only live empty cells</div>
+          <div><b>7. Unit Lookups:</b> Precomputed 3×N caches</div>
+          <div><b>8. Complete-Unit Skip:</b> Fully solved units bypassed</div>
+        </div>
+        <div class="copyright-legal-bar">
+          <span>Project: Generic Sudoku Solver Using Constraint Propagation</span>
+          <span>Copyright &copy; 2026: All Rights Reserved.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════════════════
+       SOLVER ENGINE (Constraint Propagation + MRV + Backtracking)
+    ═══════════════════════════════════════════════════════════════════ */
+    const UNIT_ROW = 0, UNIT_COL = 1, UNIT_BOX = 2;
+    const NONE_CELL = -1;
+    const MAX_STEPS = 50_000;
+    const EV = { GIVEN: 'given', NAKED: 'naked', HIDDEN: 'hidden', GUESS: 'guess', CONTRA: 'contra', BACKTRACK: 'backtrack', SOLVED: 'solved' };
+
+    function buildSolver() {
+      const FULL = 0x1ff; // 9 bits
+      const cellRow = new Int32Array(81), cellCol = new Int32Array(81);
+      for (let i = 0; i < 81; i++) { cellRow[i] = (i / 9) | 0; cellCol[i] = i % 9; }
+      const rowBand = [0, 0, 0, 1, 1, 1, 2, 2, 2], colBand = [0, 0, 0, 1, 1, 1, 2, 2, 2];
+      function boxIdx(r, c) { return rowBand[r] * 3 + colBand[c]; }
+      function isSingle(m) { return m !== 0 && (m & (m - 1)) === 0; }
+      function lowBit(m) { return 31 - Math.clz32(m & -m); }
+      function popcount(m) { m = m - ((m >>> 1) & 0x55555555); m = (m & 0x33333333) + ((m >>> 2) & 0x33333333); return (((m + (m >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24; }
+      function maskVals(m) { const a = []; for (let v = 1; v <= 9; v++) if (m & (1 << (v - 1))) a.push(v); return a; }
+
+      const UC = [Array(9), Array(9), Array(9)];
+      for (let i = 0; i < 9; i++) {
+        UC[0][i] = Array.from({ length: 9 }, (_, c) => [i, c]);
+        UC[1][i] = Array.from({ length: 9 }, (_, r) => [r, i]);
+        const br = ((i / 3) | 0) * 3, bc = (i % 3) * 3;
+        const bx = []; for (let r = br; r < br + 3; r++) for (let c = bc; c < bc + 3; c++) bx.push([r, c]);
+        UC[2][i] = bx;
+      }
+
+      function explain(type, r, c, v, opts = {}) {
+        const { depth = 0, unitType = null, unitIndex = null, candidates = [], remaining = [] } = opts;
+        function uName(ut, ui) { return ut === 0 ? `Row ${ui + 1}` : ut === 1 ? `Column ${ui + 1}` : `Box ${ui + 1}`; }
+
+        switch (type) {
+          case EV.GIVEN: return {
+            title: `Starting Clue: R${r + 1}C${c + 1} = ${v}`,
+            short: `Starting clue`,
+            long: `<p>This cell is one of the fixed digits provided in the initial puzzle. Given clues are locked anchors that guide constraint propagation.</p>`
+          };
+          case EV.NAKED: return {
+            title: `Naked Single: R${r + 1}C${c + 1} = ${v}`,
+            short: `R${r + 1}C${c + 1} = ${v} — only digit left in this cell`,
+            long: `<p>A <em>naked single</em> occurs when 8 other digits already appear in this cell's row, column, or 3×3 box.</p><p>Strip all blocked values from 1–9 and only <b>${v}</b> is legally possible — it must go here.</p>`
+          };
+          case EV.HIDDEN: {
+            const un = uName(unitType, unitIndex);
+            return {
+              title: `Hidden Single: R${r + 1}C${c + 1} = ${v}`,
+              short: `R${r + 1}C${c + 1} = ${v} — only cell in ${un} that can hold ${v}`,
+              long: `<p>Inside <b>${un}</b>, the digit <b>${v}</b> can only legally fit into R${r + 1}C${c + 1}. All other cells in this unit have ${v} blocked by row, column, or box peers.</p>`
+            };
+          }
+          case EV.GUESS: {
+            const candStr = candidates.join(', ');
+            return {
+              title: `Guess (MRV): R${r + 1}C${c + 1} = ${v} · Depth ${depth + 1}`,
+              short: `Guess R${r + 1}C${c + 1} = ${v} (depth ${depth + 1})`,
+              long: `<p>No forced moves remain anywhere on the board. The solver must make an informed guess.</p>
+<p>It selected R${r + 1}C${c + 1} using the <em>Minimum Remaining Values (MRV)</em> heuristic: this cell has the fewest legal digits — only <b>${candidates.length} options</b> (${candStr}). Choosing the most constrained cell first keeps the search tree small and minimises wasted work.</p>
+<p>A new stack frame is pushed at depth ${depth + 1}. We try <b>${v}</b> first. If a contradiction appears anywhere on the board, every placement made after this point will be undone automatically and we'll try the next option at this same cell.</p>`
+            };
+          }
+          case EV.CONTRA: return {
+            title: `Contradiction Detected`,
+            short: `Contradiction — zero candidates remain`,
+            long: `<p>A dead end was reached: an empty cell has <b>zero legal candidate values</b> remaining. Every digit 1–9 is already blocked.</p><p>This proves an earlier guess in the search tree was wrong. Backtracking begins immediately.</p>`
+          };
+          case EV.BACKTRACK: return {
+            title: `Backtrack: Guess ${v} at R${r + 1}C${c + 1} Failed`,
+            short: `Backtrack — guess ${v} at R${r + 1}C${c + 1} failed (depth ${depth + 1})`,
+            long: `<p>The guess of <b>${v}</b> at R${r + 1}C${c + 1} led to a contradiction. The solver pops this stack frame, undoes all downstream placements, and proceeds to the next candidate value.</p>`
+          };
+          case EV.SOLVED: return {
+            title: `🎉 Puzzle Completely Solved!`,
+            short: `Puzzle solved! All 81 cells validly filled`,
+            long: `<p>Every cell is filled and all 27 units (9 rows, 9 columns, 9 boxes) each contain digits 1–9 without duplicates. All constraints satisfied!</p>`
+          };
+          default: return { title: type, short: type, long: type };
+        }
+      }
+
+      function solve(flatBoard) {
+        const steps = [];
+        const board = new Int32Array(flatBoard);
+        if (!isValid(board)) return { steps, valid: false };
+
+        const rowU = new Int32Array(9), colU = new Int32Array(9), boxU = new Int32Array(9);
+        const ePrev = new Int32Array(81).fill(-1), eNext = new Int32Array(81).fill(-1);
+        let eHead = -1, eTail = -1;
+
+        function initEmpty() {
+          let last = -1; eHead = eTail = -1;
+          for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+            if (board[r * 9 + c]) continue;
+            const code = r * 9 + c;
+            ePrev[code] = last; eNext[code] = -1;
+            if (last === -1) eHead = code; else eNext[last] = code;
+            last = code;
+          }
+          eTail = last;
+        }
+        function rmEmpty(code) {
+          const p = ePrev[code], nx = eNext[code];
+          if (p !== -1) eNext[p] = nx; else eHead = nx;
+          if (nx !== -1) ePrev[nx] = p; else eTail = p;
+        }
+        function restoreEmpty(code) {
+          const p = ePrev[code], nx = eNext[code];
+          if (p !== -1) eNext[p] = code; else eHead = code;
+          if (nx !== -1) ePrev[nx] = code; else eTail = code;
+        }
+        function candMask(r, c) { return FULL & ~(rowU[r] | colU[c] | boxU[boxIdx(r, c)]); }
+        function markUsed(r, c, v) { const b = 1 << (v - 1), bx = boxIdx(r, c); rowU[r] |= b; colU[c] |= b; boxU[bx] |= b; }
+        function placeCell(r, c, v) { markUsed(r, c, v); rmEmpty(r * 9 + c); }
+        function unplace(r, c, v) { const b = 1 << (v - 1), bx = boxIdx(r, c); rowU[r] &= ~b; colU[c] &= ~b; boxU[bx] &= ~b; restoreEmpty(r * 9 + c); }
+        function snap() { return board.slice(); }
+
+        const guessStack = [];
+        function stackSnap() { return guessStack.map(f => ({ ...f })); }
+        function pushStep(s) { s.stack = stackSnap(); steps.push(s); }
+
+        // Initial Givens
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c];
+          if (!v) continue;
+          const ex = explain(EV.GIVEN, r, c, v);
+          pushStep({
+            type: EV.GIVEN, row: r, col: c, val: v, depth: 0,
+            candidates: [], unitType: null, unitIndex: null,
+            title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+          });
+          markUsed(r, c, v);
+        }
+        initEmpty();
+
+        let gen = 0;
+        const cellGen = new Int32Array(81), unitGen = new Int32Array(27);
+        function enqCell(r, c, cellQ) {
+          if (board[r * 9 + c]) return;
+          const code = r * 9 + c; if (cellGen[code] === gen) return; cellGen[code] = gen; cellQ.push(code);
+        }
+        function enqUnit(ut, ui, unitQ) { const code = ut * 9 + ui; if (unitGen[code] === gen) return; unitGen[code] = gen; unitQ.push(code); }
+        function enqPeers(r, c, cellQ, unitQ) {
+          for (let cc = 0; cc < 9; cc++) if (cc !== c) enqCell(r, cc, cellQ);
+          for (let rr = 0; rr < 9; rr++) if (rr !== r) enqCell(rr, c, cellQ);
+          const sr = rowBand[r] * 3, sc = colBand[c] * 3;
+          for (let rr = sr; rr < sr + 3; rr++) for (let cc = sc; cc < sc + 3; cc++) if (rr !== r || cc !== c) enqCell(rr, cc, cellQ);
+          enqUnit(0, r, unitQ); enqUnit(1, c, unitQ); enqUnit(2, boxIdx(r, c), unitQ);
+        }
+
+        function placeRecord(r, c, v, evType, depth, unitType, unitIndex, extraOpts) {
+          board[r * 9 + c] = v; placeCell(r, c, v);
+          const ex = explain(evType, r, c, v, { depth, unitType, unitIndex, ...extraOpts });
+          pushStep({
+            type: evType, row: r, col: c, val: v, depth,
+            candidates: extraOpts.candidates || [], unitType, unitIndex,
+            title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+          });
+        }
+
+        let capped = false;
+
+        function propagate(justCode, log, depth) {
+          gen++;
+          const cellQ = [], unitQ = [];
+          if (justCode === NONE_CELL) {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) enqCell(r, c, cellQ);
+            for (let i = 0; i < 9; i++) { enqUnit(0, i, unitQ); enqUnit(1, i, unitQ); enqUnit(2, i, unitQ); }
+          } else {
+            const jr = cellRow[justCode], jc = cellCol[justCode];
+            enqPeers(jr, jc, cellQ, unitQ);
+          }
+
+          while (cellQ.length || unitQ.length) {
+            while (cellQ.length) {
+              if (steps.length >= MAX_STEPS) return 'cap';
+              const code = cellQ.shift(); cellGen[code] = 0;
+              const r = cellRow[code], c = cellCol[code];
+              if (board[r * 9 + c]) continue;
+              const mask = candMask(r, c);
+              if (!mask) {
+                const ex = explain(EV.CONTRA, r, c, 0, { depth });
+                pushStep({
+                  type: EV.CONTRA, row: r, col: c, val: 0, depth,
+                  candidates: [], unitType: null, unitIndex: null,
+                  title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+                });
+                return false;
+              }
+              if (isSingle(mask)) {
+                const v = lowBit(mask) + 1;
+                placeRecord(r, c, v, EV.NAKED, depth, null, null, { candidates: [v] });
+                log.push(r * 9 + c); enqPeers(r, c, cellQ, unitQ);
+              }
+            }
+            if (unitQ.length) {
+              if (steps.length >= MAX_STEPS) return 'cap';
+              const uc = unitQ.shift(); unitGen[uc] = 0;
+              const ut = (uc / 9) | 0, ui = uc % 9;
+              const res = checkHS(ut, ui, cellQ, unitQ, log, depth);
+              if (res === false) return false; if (res === 'cap') return 'cap';
+            }
+          }
+          return true;
+        }
+
+        function checkHS(ut, ui, cellQ, unitQ, log, depth) {
+          const uUsed = ut === 0 ? rowU[ui] : ut === 1 ? colU[ui] : boxU[ui];
+          if (uUsed === FULL) return true;
+          const cells = UC[ut][ui];
+          let seenOnce = 0, seenTwice = 0; const masks = [];
+          for (let i = 0; i < 9; i++) {
+            const [r, c] = cells[i];
+            if (board[r * 9 + c]) { masks.push(0); continue; }
+            const mask = candMask(r, c);
+            if (!mask) {
+              const ex = explain(EV.CONTRA, r, c, 0, { depth, unitType: ut, unitIndex: ui });
+              pushStep({
+                type: EV.CONTRA, row: r, col: c, val: 0, depth,
+                candidates: [], unitType: ut, unitIndex: ui,
+                title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+              });
+              return false;
+            }
+            masks.push(mask); seenTwice |= (seenOnce & mask); seenOnce |= mask;
+          }
+          if (FULL & ~seenOnce & ~uUsed) {
+            const ex = explain(EV.CONTRA, null, null, 0, { depth, unitType: ut, unitIndex: ui });
+            pushStep({
+              type: EV.CONTRA, row: null, col: null, val: 0, depth,
+              candidates: [], unitType: ut, unitIndex: ui,
+              title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+            });
+            return false;
+          }
+          const hs = seenOnce & ~seenTwice;
+          if (!hs) return true;
+          for (let v = 1; v <= 9; v++) {
+            if (steps.length >= MAX_STEPS) return 'cap';
+            const bit = 1 << (v - 1); if (!(hs & bit)) continue;
+            for (let i = 0; i < 9; i++) {
+              const [r, c] = cells[i];
+              if (board[r * 9 + c]) continue; if (!(masks[i] & bit)) continue;
+              placeRecord(r, c, v, EV.HIDDEN, depth, ut, ui, { candidates: [v] });
+              log.push(r * 9 + c); enqPeers(r, c, cellQ, unitQ); break;
+            }
+          }
+          return true;
+        }
+
+        function undoLog(log) {
+          for (let i = log.length - 1; i >= 0; i--) {
+            const code = log[i], r = cellRow[code], c = cellCol[code], v = board[r * 9 + c];
+            board[r * 9 + c] = 0; unplace(r, c, v);
+          }
+        }
+
+        function findBest() {
+          let best = -1, minC = 10;
+          for (let code = eHead; code !== -1; code = eNext[code]) {
+            const r = cellRow[code], c = cellCol[code];
+            const cnt = popcount(candMask(r, c));
+            if (cnt < minC) { minC = cnt; best = code; if (minC === 1) break; }
+          }
+          return best;
+        }
+
+        function solveBoard(justCode, depth) {
+          const log = [];
+          const res = propagate(justCode, log, depth);
+          if (res === false) { undoLog(log); return false; }
+          if (res === 'cap') { capped = true; undoLog(log); return false; }
+
+          const best = findBest();
+          if (best === -1) {
+            const ex = explain(EV.SOLVED, null, null, 0, { depth });
+            pushStep({
+              type: EV.SOLVED, row: null, col: null, val: 0, depth,
+              candidates: [], unitType: null, unitIndex: null,
+              title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+            });
+            return true;
+          }
+
+          const r = cellRow[best], c = cellCol[best];
+          const mask = candMask(r, c);
+          const cands = maskVals(mask);
+
+          for (let v = 1; v <= 9; v++) {
+            if (steps.length >= MAX_STEPS) { capped = true; undoLog(log); return false; }
+            if (!(mask & (1 << (v - 1)))) continue;
+            const remaining = cands.filter(x => x > v);
+
+            guessStack.push({ depth: depth + 1, row: r, col: c, val: v, candidates: cands.slice(), remaining });
+            const exG = explain(EV.GUESS, r, c, v, { depth, candidates: cands, remaining });
+            pushStep({
+              type: EV.GUESS, row: r, col: c, val: v, depth,
+              candidates: cands.slice(), unitType: null, unitIndex: null,
+              title: exG.title, explainShort: exG.short, explainLong: exG.long, board: snap()
+            });
+
+            board[r * 9 + c] = v; placeCell(r, c, v);
+            if (solveBoard(r * 9 + c, depth + 1)) return true;
+            board[r * 9 + c] = 0; unplace(r, c, v);
+
+            guessStack.pop();
+            const exB = explain(EV.BACKTRACK, r, c, v, { depth, candidates: cands, remaining });
+            pushStep({
+              type: EV.BACKTRACK, row: r, col: c, val: v, depth,
+              candidates: cands.slice(), unitType: null, unitIndex: null,
+              title: exB.title, explainShort: exB.short, explainLong: exB.long, board: snap()
+            });
+          }
+          undoLog(log);
+          return false;
+        }
+
+        const solved = solveBoard(NONE_CELL, 0);
+        return { steps, solved, capped, valid: true };
+      }
+
+      function isValid(board) {
+        const rS = new Int32Array(9), cS = new Int32Array(9), bS = new Int32Array(9);
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c]; if (!v || v > 9) continue;
+          const bit = 1 << (v - 1), bx = boxIdx(r, c);
+          if ((rS[r] & bit) || (cS[c] & bit) || (bS[bx] & bit)) return false;
+          rS[r] |= bit; cS[c] |= bit; bS[bx] |= bit;
+        }
+        return true;
+      }
+
+      function findConflicts(board) {
+        const conf = new Set();
+        const rM = Array.from({ length: 9 }, () => new Map());
+        const cM = Array.from({ length: 9 }, () => new Map());
+        const bM = Array.from({ length: 9 }, () => new Map());
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c], bx = boxIdx(r, c), code = r * 9 + c; if (!v) continue;
+          if (rM[r].has(v)) { conf.add(code); conf.add(rM[r].get(v)); } else rM[r].set(v, code);
+          if (cM[c].has(v)) { conf.add(code); conf.add(cM[c].get(v)); } else cM[c].set(v, code);
+          if (bM[bx].has(v)) { conf.add(code); conf.add(bM[bx].get(v)); } else bM[bx].set(v, code);
+        }
+        return conf;
+      }
+
+      function computeCands(board) {
+        const rU = new Int32Array(9), cU = new Int32Array(9), bU = new Int32Array(9);
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c]; if (v) { const b = 1 << (v - 1); rU[r] |= b; cU[c] |= b; bU[boxIdx(r, c)] |= b; }
+        }
+        const out = new Int32Array(81);
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          if (!board[r * 9 + c]) out[r * 9 + c] = FULL & ~(rU[r] | cU[c] | bU[boxIdx(r, c)]);
+        }
+        return out;
+      }
+
+      return { solve, isValid, findConflicts, computeCands };
+    }
+
+    const Solver = buildSolver();
+
+    /* ═══════════════════════════════════════════════════════════════════
+       BUILT-IN PUZZLES (Tested and Validated)
+    ═══════════════════════════════════════════════════════════════════ */
+    const PUZZLES = [
+      {
+        name: 'Easy',
+        sub: 'Naked singles only',
+        bars: 1,
+        str: '530070000600195000098000060800060003400803001700020006060000280000419005000080079'
+      },
+      {
+        name: 'Medium',
+        sub: 'Needs hidden singles',
+        bars: 2,
+        str: '000000000904607000076804100309701080008000300050308702007502610000403208000000000'
+      },
+      {
+        name: 'Hard',
+        sub: 'Guesses + backtracks',
+        bars: 3,
+        str: '000000012000000003002300400001800005060070800000009000008500000900040500470006000'
+      },
+      {
+        name: 'Minimal',
+        sub: '17 clues',
+        bars: 3,
+        str: '000000010400000000020000000000050407008000300001090000300400200050100000000806000'
+      },
+      {
+        name: 'Invalid',
+        sub: 'Duplicate given',
+        bars: 0,
+        str: '550070000600195000098000060800060003400803001700020006060000280000419005000080079'
+      },
+      {
+        name: 'Unsolvable',
+        sub: 'Valid start, no solution',
+        bars: 2,
+        str: '300000000000003085001020000000507000004000100090000000500000073002010000000040009'
+      }
+    ];
+
+    /* ═══════════════════════════════════════════════════════════════════
+       APP STATE
+    ═══════════════════════════════════════════════════════════════════ */
+    let steps = [], currentStep = -1, playTimer = null, isPlaying = false, showPencil = true;
+    let editMode = false, editBoard = new Int32Array(81), loadedStr = '';
+    let currentPuzzleMeta = PUZZLES[1]; // Default to Medium (matching image)
+
+    const EV_COLOR = {
+      given: '#ffffff',
+      naked: '#2563eb',
+      hidden: '#16a34a',
+      guess: '#ea580c',
+      contra: '#dc2626',
+      backtrack: '#9333ea',
+      solved: '#10b981'
+    };
+
+    const EV_LABEL = {
+      given: 'Given',
+      naked: 'Naked Single',
+      hidden: 'Hidden Single',
+      guess: 'Guess (MRV)',
+      contra: 'Contradiction',
+      backtrack: 'Backtrack',
+      solved: 'Solved'
+    };
+
+    const DEPTH_COLORS = ['#ea580c', '#16a34a', '#2563eb', '#9333ea', '#ec4899', '#06b6d4', '#eab308'];
+
+    const $ = id => document.getElementById(id);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       DOM INITIALIZATION
+    ═══════════════════════════════════════════════════════════════════ */
+    function buildGrid() {
+      const g = $('sudoku-grid');
+      g.innerHTML = '';
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const el = document.createElement('div');
+          el.className = 'cell';
+          el.dataset.row = r;
+          el.dataset.col = c;
+          el.addEventListener('click', onCellClick);
+          g.appendChild(el);
+        }
+      }
+    }
+
+    function getCell(r, c) {
+      return document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+    }
+
+    function updateDifficultyWidget(meta) {
+      if (!meta) return;
+      currentPuzzleMeta = meta;
+      $('diff-name').textContent = meta.name;
+      $('diff-sub').textContent = meta.sub;
+
+      const barsContainer = $('diff-bars');
+      barsContainer.innerHTML = '';
+      for (let b = 1; b <= 3; b++) {
+        const barEl = document.createElement('div');
+        barEl.className = 'diff-bar' + (b <= meta.bars ? ' active' : '');
+        barsContainer.appendChild(barEl);
+      }
+    }
+
+    function formatStepTime(stepIdx) {
+      const baseSeconds = 10 * 3600 + 42 * 60 + 11;
+      const totalSec = baseSeconds + Math.floor(stepIdx * 0.4);
+      const hh = String(Math.floor(totalSec / 3600) % 24).padStart(2, '0');
+      const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+      const ss = String(totalSec % 60).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       STEP RENDERING (Board, Current Step, Stack, Feed)
+    ═══════════════════════════════════════════════════════════════════ */
+    function applyStep(idx) {
+      if (idx < 0 || idx >= steps.length) return;
+      currentStep = idx;
+      const step = steps[idx];
+      const board = step.board;
+      const candMasks = showPencil ? Solver.computeCands(board) : null;
+
+      // Unit Tint
+      const unitSet = new Set();
+      if (step.unitType !== null && step.unitIndex !== null) {
+        const ut = step.unitType, ui = step.unitIndex;
+        if (ut === 0) for (let c = 0; c < 9; c++) unitSet.add(ui * 9 + c);
+        else if (ut === 1) for (let r = 0; r < 9; r++) unitSet.add(r * 9 + ui);
+        else {
+          const br = ((ui / 3) | 0) * 3, bc = (ui % 3) * 3;
+          for (let r = br; r < br + 3; r++) for (let c = bc; c < bc + 3; c++) unitSet.add(r * 9 + c);
+        }
+      }
+
+      // Technique block color mapping up to current step
+      const cellEv = new Array(81).fill(null);
+      for (let i = 0; i <= idx; i++) {
+        const s = steps[i];
+        if (s.row === null) continue;
+        const code = s.row * 9 + s.col;
+        if (s.type === EV.CONTRA || s.type === EV.BACKTRACK || s.type === EV.SOLVED) continue;
+        if (board[code] !== 0) cellEv[code] = s.type;
+      }
+
+      // Render Grid Cells
+      document.querySelectorAll('.cell').forEach(cell => {
+        const r = +cell.dataset.row, c = +cell.dataset.col, code = r * 9 + c;
+        const val = board[code];
+        cell.className = 'cell';
+        if (editMode) {
+          cell.classList.add('edit-mode');
+          cell.innerHTML = val ? val : '';
+          return;
+        }
+
+        if (unitSet.has(code)) cell.classList.add('unit-tint');
+        if (cellEv[code]) cell.classList.add('ev-' + cellEv[code]);
+        if (step.row === r && step.col === c) cell.classList.add('active-cell');
+
+        cell.innerHTML = '';
+        if (val) {
+          cell.textContent = val;
+        } else if (showPencil && candMasks && candMasks[code]) {
+          const wrap = document.createElement('div');
+          wrap.className = 'pencil-wrap';
+          for (let v = 1; v <= 9; v++) {
+            const pm = document.createElement('div');
+            pm.className = 'pencil-mark';
+            if (candMasks[code] & (1 << (v - 1))) pm.textContent = v;
+            wrap.appendChild(pm);
+          }
+          cell.appendChild(wrap);
+        }
+      });
+
+      renderExplanation(step);
+      renderStack(step);
+      renderFeed();
+      renderDepth(step.depth);
+      updateStats();
+      updateScrubber();
+    }
+
+    function renderExplanation(step) {
+      const badge = $('explanation-badge');
+      badge.textContent = EV_LABEL[step.type] || step.type;
+      badge.style.background = EV_COLOR[step.type] || '#ea580c';
+
+      $('step-headline').textContent = step.title || `Step ${currentStep + 1}`;
+      $('explanation-text').innerHTML = step.explainLong || step.explainShort || '';
+    }
+
+    function renderDepth(depth) {
+      const container = $('depth-pips-container');
+      container.innerHTML = '';
+      const maxPips = Math.max(depth + 2, 7);
+
+      for (let i = 0; i < maxPips; i++) {
+        const pip = document.createElement('div');
+        pip.className = 'depth-pip' + (i < depth ? ' active' : '');
+        if (i < depth) {
+          pip.style.background = DEPTH_COLORS[i % DEPTH_COLORS.length];
+          pip.style.boxShadow = `0 0 6px ${DEPTH_COLORS[i % DEPTH_COLORS.length]}`;
+        }
+        container.appendChild(pip);
+      }
+
+      $('depth-text-label').textContent = depth > 0 ? `Depth ${depth}` : `Depth 0`;
+    }
+
+    function renderStack(step) {
+      const container = $('stack-container');
+      const stack = step.stack || [];
+
+      $('stack-frame-count').textContent = `${stack.length} FRAME${stack.length !== 1 ? 'S' : ''}`;
+
+      if (!stack.length) {
+        container.innerHTML = `
+      <div class="stack-empty">
+        <span>No active guesses</span>
+        <small style="opacity:0.7;">Solving by constraint propagation</small>
+      </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      const display = [...stack].reverse(); // Active frame at top
+
+      display.forEach((frame, di) => {
+        const isTop = di === 0;
+        const col = DEPTH_COLORS[(frame.depth - 1) % DEPTH_COLORS.length];
+        const remaining = frame.remaining || [];
+
+        const frameEl = document.createElement('div');
+        frameEl.className = 'stack-frame-card' + (isTop ? ' frame-active' : '');
+        frameEl.title = `Click to focus R${frame.row + 1}C${frame.col + 1}`;
+        frameEl.addEventListener('click', () => {
+          document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
+          getCell(frame.row, frame.col)?.classList.add('active-cell');
+        });
+
+        frameEl.innerHTML = `
+      <div class="frame-card-top">
+        <div class="frame-top-left">
+          <span class="frame-depth-badge" style="background:${col};">D${frame.depth}</span>
+          <span class="frame-cell-text">R${frame.row + 1}C${frame.col + 1}</span>
+        </div>
+        ${isTop ? '<span class="frame-active-tag">● ACTIVE</span>' : ''}
+      </div>
+      <div class="frame-card-metrics">
+        <div class="metric-box">
+          <span class="metric-label">TRYING</span>
+          <span class="metric-val" style="color:${isTop ? '#ea580c' : '#ffffff'};">${frame.val}</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">ALL OPTIONS</span>
+          <span class="metric-val">${frame.candidates.join(', ')}</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">REMAINING</span>
+          <span class="metric-val ${remaining.length ? 'rem-active' : 'rem-none'}">
+            ${remaining.length ? remaining.join(', ') : 'none left'}
+          </span>
+        </div>
+      </div>`;
+
+        container.appendChild(frameEl);
+      });
+
+      const activeEl = container.querySelector('.frame-active');
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    function renderFeed() {
+      const container = $('step-log');
+      $('feed-range-label').textContent = `STEPS 1–${currentStep + 1} OF ${steps.length}`;
+
+      const windowSize = 80;
+      const startIdx = Math.max(0, currentStep - windowSize + 1);
+
+      container.innerHTML = '';
+      for (let i = startIdx; i <= currentStep; i++) {
+        const s = steps[i];
+        const isCurrent = i === currentStep;
+        const col = EV_COLOR[s.type] || '#2563eb';
+        const targetCell = s.row !== null ? `R${s.row + 1}C${s.col + 1}` : '';
+        const valText = s.val ? ` = ${s.val}` : '';
+
+        const row = document.createElement('div');
+        row.className = 'feed-row-card' + (isCurrent ? ' current' : '');
+        row.addEventListener('click', () => {
+          stopPlay();
+          applyStep(i);
+        });
+
+        row.innerHTML = `
+      <div class="feed-top-row">
+        <div class="feed-left-group">
+          <span class="feed-step-num">#${i + 1}</span>
+          <span class="feed-badge" style="background:${col};">${EV_LABEL[s.type] || s.type}</span>
+          <span class="feed-cell-target">${targetCell}${valText}</span>
+        </div>
+        <span class="feed-timestamp">${formatStepTime(i)}</span>
+      </div>
+      <div class="feed-bottom-text">${s.explainShort || ''}</div>`;
+
+        container.appendChild(row);
+      }
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function updateScrubber() {
+      const s = $('scrubber');
+      s.max = Math.max(0, steps.length - 1);
+      s.value = currentStep;
+      $('step-counter-label').textContent = `Step ${currentStep + 1} / ${steps.length}`;
+    }
+
+    function updateStats() {
+      if (!steps.length) return;
+      let place = 0, naked = 0, hidden = 0, guess = 0, back = 0, maxD = 0;
+      const end = Math.min(currentStep + 1, steps.length);
+
+      for (let i = 0; i < end; i++) {
+        const s = steps[i];
+        if (s.type === EV.NAKED) { place++; naked++; }
+        else if (s.type === EV.HIDDEN) { place++; hidden++; }
+        else if (s.type === EV.GUESS) guess++;
+        else if (s.type === EV.BACKTRACK) back++;
+        if (s.depth > maxD) maxD = s.depth;
+      }
+
+      $('st-place').textContent = place;
+      $('st-naked').textContent = naked;
+      $('st-hidden').textContent = hidden;
+      $('st-guess').textContent = guess;
+      $('st-back').textContent = back;
+      $('st-depth').textContent = maxD;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PLAYBACK ENGINE
+    ═══════════════════════════════════════════════════════════════════ */
+    const SPEED = [1600, 700, 300, 120, 50, 20, 8, 3];
+    function getDelay() { return SPEED[Math.max(0, Math.min(7, +$('speed-slider').value - 1))]; }
+
+    function playTick() {
+      if (currentStep >= steps.length - 1) {
+        stopPlay();
+        return;
+      }
+      applyStep(currentStep + 1);
+      playTimer = setTimeout(playTick, getDelay());
+    }
+
+    function startPlay() {
+      if (isPlaying) return;
+      if (currentStep >= steps.length - 1) applyStep(0);
+      isPlaying = true;
+      $('play-icon-svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+      playTick();
+    }
+
+    function stopPlay() {
+      if (!isPlaying) return;
+      clearTimeout(playTimer);
+      isPlaying = false;
+      $('play-icon-svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
+    }
+
+    function togglePlay() {
+      isPlaying ? stopPlay() : startPlay();
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PUZZLE LOADING & MANAGEMENT
+    ═══════════════════════════════════════════════════════════════════ */
+    function parsePuzzle(str) {
+      const clean = str.replace(/\s/g, '').replace(/\./g, '0');
+      if (!/^[0-9]{81}$/.test(clean)) return null;
+      return Int32Array.from(clean, ch => +ch);
+    }
+
+    function loadAndSolve(puzzleStr, meta) {
+      stopPlay();
+      const board = parsePuzzle(puzzleStr);
+      if (!board) {
+        showNotice('Invalid puzzle string — need exactly 81 digits (0 or . for blanks).', 'error');
+        return;
+      }
+
+      loadedStr = puzzleStr;
+      editBoard = board.slice();
+      if (meta) updateDifficultyWidget(meta);
+      if (editMode) toggleEditMode(false);
+
+      const result = Solver.solve(board);
+      if (!result.valid) {
+        showNotice('Puzzle has duplicate givens — cannot solve. Conflicts are highlighted.', 'error');
+        renderConflictBoard(board);
+        steps = [{
+          type: EV.CONTRA, row: null, col: null, val: 0, depth: 0,
+          candidates: [], unitType: null, unitIndex: null, stack: [],
+          title: 'Invalid Puzzle', explainShort: 'Duplicate givens detected.',
+          explainLong: '<p>This puzzle contains duplicate values in the same row, column, or box. Conflicts are highlighted in red.</p>',
+          board: board.slice()
+        }];
+        currentStep = 0;
+        updateScrubber();
+        renderFeed();
+        updateStats();
+        return;
+      }
+
+      if (result.capped) {
+        showNotice(`Step recording capped at ${MAX_STEPS.toLocaleString()} steps.`, 'warn');
+      } else if (!result.solved) {
+        showNotice('No solution exists for this puzzle — exhaustive search complete.', 'warn');
+      } else {
+        hideNotice();
+      }
+
+      steps = result.steps;
+      currentStep = -1;
+      applyStep(0);
+    }
+
+    function renderConflictBoard(board) {
+      const conf = Solver.findConflicts(board);
+      document.querySelectorAll('.cell').forEach(cell => {
+        const r = +cell.dataset.row, c = +cell.dataset.col, code = r * 9 + c;
+        cell.className = 'cell';
+        cell.innerHTML = '';
+        if (board[code]) {
+          cell.textContent = board[code];
+          cell.classList.add(conf.has(code) ? 'ev-contra' : 'cell');
+        }
+      });
+    }
+
+    function buildPuzzleDropdown() {
+      const dd = $('puzzle-dropdown');
+      dd.innerHTML = '';
+
+      PUZZLES.forEach((p, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'dropdown-item';
+        btn.innerHTML = `
+      <div>
+        <strong>${p.name}</strong>
+        <span class="dropdown-item-desc">${p.sub}</span>
+      </div>`;
+        btn.addEventListener('click', () => {
+          dd.classList.remove('open');
+          loadAndSolve(p.str, p);
+        });
+        dd.appendChild(btn);
+      });
+
+      const divider = document.createElement('div');
+      divider.style.cssText = 'height:1px; background:#1e2640; margin:4px 0;';
+      dd.appendChild(divider);
+
+      const pasteBtn = document.createElement('button');
+      pasteBtn.className = 'dropdown-item';
+      pasteBtn.innerHTML = `
+    <div>
+      <strong>Paste 81-string…</strong>
+      <span class="dropdown-item-desc">Load custom puzzle string</span>
+    </div>`;
+      pasteBtn.addEventListener('click', () => {
+        dd.classList.remove('open');
+        $('paste-input').value = '';
+        $('paste-error').textContent = '';
+        openM('paste-modal');
+      });
+      dd.appendChild(pasteBtn);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       LOCAL STORAGE (My Puzzles)
+    ═══════════════════════════════════════════════════════════════════ */
+    const LS = 'sudoku-vis-custom';
+    function getSaved() { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch { return []; } }
+    function setSaved(arr) { localStorage.setItem(LS, JSON.stringify(arr)); }
+
+    function renderManage() {
+      const list = $('saved-list');
+      const saved = getSaved();
+      list.innerHTML = '';
+
+      if (!saved.length) {
+        list.innerHTML = '<p style="font-size:0.8rem; color:#94a3b8; padding:0.5rem 0;">No custom saved puzzles yet.</p>';
+        return;
+      }
+
+      saved.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:#090d18; border:1px solid #1e2640; border-radius:6px; padding:0.4rem 0.65rem;';
+        row.innerHTML = `
+      <span style="font-size:0.82rem; font-weight:600; color:#fff;">${p.name}</span>
+      <div style="display:flex; gap:0.4rem;">
+        <button class="btn-pill" style="padding:0.2rem 0.5rem;" data-idx="${i}" data-act="load">Load</button>
+        <button class="btn-pill" style="padding:0.2rem 0.5rem; color:#ef4444;" data-idx="${i}" data-act="del">Delete</button>
+      </div>`;
+
+        row.querySelector('[data-act="load"]').addEventListener('click', () => {
+          closeM('manage-modal');
+          loadAndSolve(p.str, { name: p.name, sub: 'Custom puzzle', bars: 2 });
+        });
+
+        row.querySelector('[data-act="del"]').addEventListener('click', () => {
+          const arr = getSaved();
+          arr.splice(i, 1);
+          setSaved(arr);
+          renderManage();
+        });
+
+        list.appendChild(row);
+      });
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       EDIT MODE
+    ═══════════════════════════════════════════════════════════════════ */
+    function toggleEditMode(state) {
+      editMode = state !== undefined ? state : !editMode;
+      $('btn-edit').textContent = editMode ? '✓ Done' : 'Edit';
+
+      if (!editMode) {
+        loadAndSolve(Array.from(editBoard).join(''), { name: 'Edited Puzzle', sub: 'Custom board', bars: 2 });
+      } else {
+        if (steps.length) editBoard = steps[0].board.slice();
+        else editBoard = new Int32Array(81);
+
+        document.querySelectorAll('.cell').forEach(cell => {
+          const r = +cell.dataset.row, c = +cell.dataset.col;
+          cell.textContent = editBoard[r * 9 + c] || '';
+          cell.className = 'cell edit-mode';
+        });
+        window._editRC = null;
+      }
+    }
+
+    function onCellClick() {
+      if (!editMode) return;
+      const r = +this.dataset.row, c = +this.dataset.col;
+      window._editRC = [r, c];
+      document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
+      this.classList.add('active-cell');
+    }
+
+    function moveEdit(r, c, dr, dc) {
+      const nr = Math.max(0, Math.min(8, r + dr)), nc = Math.max(0, Math.min(8, c + dc));
+      window._editRC = [nr, nc];
+      document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
+      getCell(nr, nc)?.classList.add('active-cell');
+    }
+
+    function validateEdit() {
+      const conf = Solver.findConflicts(editBoard);
+      document.querySelectorAll('.cell').forEach(cell => {
+        const r = +cell.dataset.row, c = +cell.dataset.col, code = r * 9 + c;
+        cell.classList.remove('edit-conflict');
+        if (conf.has(code)) cell.classList.add('edit-conflict');
+      });
+    }
+
+    document.addEventListener('keydown', e => {
+      if (editMode && window._editRC) {
+        const [r, c] = window._editRC;
+        if (e.key >= '1' && e.key <= '9') {
+          editBoard[r * 9 + c] = +e.key;
+          getCell(r, c).textContent = e.key;
+          getCell(r, c).className = 'cell edit-mode';
+          validateEdit();
+        } else if (['Backspace', 'Delete', '0'].includes(e.key)) {
+          editBoard[r * 9 + c] = 0;
+          getCell(r, c).textContent = '';
+          getCell(r, c).className = 'cell edit-mode';
+          validateEdit();
+        } else if (e.key === 'ArrowRight') moveEdit(r, c, 0, 1);
+        else if (e.key === 'ArrowLeft') moveEdit(r, c, 0, -1);
+        else if (e.key === 'ArrowDown') moveEdit(r, c, 1, 0);
+        else if (e.key === 'ArrowUp') moveEdit(r, c, -1, 0);
+        else if (e.key === 'Enter' || e.key === 'Escape') toggleEditMode(false);
+        e.preventDefault();
+        return;
+      }
+
+      if (!editMode) {
+        if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); togglePlay(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stopPlay(); applyStep(currentStep + 1); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); stopPlay(); applyStep(currentStep - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); stopPlay(); applyStep(0); }
+        else if (e.key === 'End') { e.preventDefault(); stopPlay(); applyStep(steps.length - 1); }
+      }
+    });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       NOTICES & MODALS
+    ═══════════════════════════════════════════════════════════════════ */
+    function showNotice(msg, type = 'info') {
+      const bar = $('notice-bar');
+      bar.textContent = msg;
+      bar.style.display = 'block';
+      bar.style.background = type === 'error' ? '#991b1b' : type === 'warn' ? '#854d0e' : '#1e3a8a';
+      bar.style.color = '#ffffff';
+    }
+
+    function hideNotice() {
+      $('notice-bar').style.display = 'none';
+    }
+
+    function openM(id) { $(id).classList.add('open'); }
+    function closeM(id) { $(id).classList.remove('open'); }
+
+    ['stats', 'paste', 'save', 'manage', 'authors'].forEach(id => {
+      $(`${id}-modal`)?.addEventListener('click', e => {
+        if (e.target === $(`${id}-modal`)) closeM(`${id}-modal`);
+      });
+    });
+
+    $('btn-authors-header')?.addEventListener('click', () => openM('authors-modal'));
+    $('btn-authors-footer')?.addEventListener('click', () => openM('authors-modal'));
+    $('authors-modal-close')?.addEventListener('click', () => closeM('authors-modal'));
+
+    $('btn-load-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      $('puzzle-dropdown').classList.toggle('open');
+    });
+
+    $('diff-widget').addEventListener('click', e => {
+      e.stopPropagation();
+      $('puzzle-dropdown').classList.toggle('open');
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#puzzle-dropdown') && !e.target.closest('#btn-load-trigger')) {
+        $('puzzle-dropdown').classList.remove('open');
+      }
+    });
+
+    $('btn-edit').addEventListener('click', () => toggleEditMode());
+    $('btn-manage-saved').addEventListener('click', () => { renderManage(); openM('manage-modal'); });
+    $('manage-close').addEventListener('click', () => closeM('manage-modal'));
+
+    $('btn-save-current').addEventListener('click', () => {
+      closeM('manage-modal');
+      $('save-name').value = '';
+      openM('save-modal');
+    });
+
+    $('btn-stats-modal').addEventListener('click', () => openM('stats-modal'));
+    $('btn-info-board').addEventListener('click', () => openM('stats-modal'));
+    $('stats-close').addEventListener('click', () => closeM('stats-modal'));
+
+    $('paste-cancel').addEventListener('click', () => closeM('paste-modal'));
+    $('paste-ok').addEventListener('click', () => {
+      const str = $('paste-input').value;
+      const board = parsePuzzle(str);
+      if (!board) {
+        $('paste-error').textContent = 'Invalid — need exactly 81 digits (0 or . for blanks).';
+        return;
+      }
+      closeM('paste-modal');
+      loadAndSolve(str.replace(/\s/g, '').replace(/\./g, '0'), { name: 'Pasted Puzzle', sub: 'Custom input', bars: 2 });
+    });
+
+    $('save-cancel').addEventListener('click', () => closeM('save-modal'));
+    $('save-ok').addEventListener('click', () => {
+      const name = $('save-name').value.trim() || 'Custom Puzzle';
+      if (loadedStr) {
+        const arr = getSaved();
+        arr.push({ name, str: loadedStr });
+        setSaved(arr);
+      }
+      closeM('save-modal');
+    });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       CONTROLS WIRING
+    ═══════════════════════════════════════════════════════════════════ */
+    $('btn-play').addEventListener('click', togglePlay);
+    $('btn-back').addEventListener('click', () => { stopPlay(); applyStep(currentStep - 1); });
+    $('btn-fwd').addEventListener('click', () => { stopPlay(); applyStep(currentStep + 1); });
+    $('btn-start').addEventListener('click', () => { stopPlay(); applyStep(0); });
+    $('btn-end').addEventListener('click', () => { stopPlay(); applyStep(steps.length - 1); });
+
+    $('btn-next-guess').addEventListener('click', () => {
+      stopPlay();
+      for (let i = currentStep + 1; i < steps.length; i++) {
+        if (steps[i].type === EV.GUESS) { applyStep(i); return; }
+      }
+    });
+
+    $('btn-next-backtrack').addEventListener('click', () => {
+      stopPlay();
+      for (let i = currentStep + 1; i < steps.length; i++) {
+        if (steps[i].type === EV.BACKTRACK) { applyStep(i); return; }
+      }
+    });
+
+    $('scrubber').addEventListener('input', e => {
+      stopPlay();
+      applyStep(+e.target.value);
+    });
+
+    $('pencil-toggle').addEventListener('change', e => {
+      showPencil = e.target.checked;
+      if (currentStep >= 0) applyStep(currentStep);
+    });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       BOOTSTRAP
+    ═══════════════════════════════════════════════════════════════════ */
+    buildGrid();
+    buildPuzzleDropdown();
+    updateDifficultyWidget(PUZZLES[1]);
+    loadAndSolve(PUZZLES[1].str, PUZZLES[1]); // Loads Medium to match the reference image
+  </script>
+</body>
+
+</html>

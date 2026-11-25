@@ -1,0 +1,2566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sudoku Solver Visualizer — The Art of Logic</title>
+
+  <!-- Google Fonts: Inter & Newsreader -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       DESIGN TOKENS (Matching Figma Editorial Warm Theme)
+    ═══════════════════════════════════════════════════════════════════ */
+    :root {
+      --bg-page: #f5f4ef;
+      --bg-header: #1c3b36;
+      --c-forest: #1c3b36;
+      --c-forest-hover: #152e2a;
+      --c-forest-light: #284c46;
+      --bg-card: #ffffff;
+      --bg-card-sand: #eeebe2;
+      --border-card: #e5e2d8;
+      --border-subtle: #eae7dd;
+      --border-grid: #1c3b36;
+      --border-cell: #e7e4dc;
+
+      --text-main: #1c3b36;
+      --text-body: #4a5552;
+      --text-muted: #78827f;
+      --text-faint: #9ea8a5;
+
+      /* Cell Highlight Tints */
+      --cell-bg-active: #eef5f2;
+      --cell-bg-warm: #f5f1e8;
+      --cell-bg-unit: rgba(28, 59, 54, 0.04);
+
+      /* Legend & Technique Colors */
+      --c-given: #44504d;
+      --c-naked: #2563eb;
+      --c-hidden: #16a34a;
+      --c-guess: #d97706;
+      --c-contra: #dc2626;
+      --c-back: #9333ea;
+      --c-solved: #10b981;
+
+      --radius-card: 18px;
+      --radius-btn: 8px;
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.02);
+      --shadow-dropdown: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       TOP NAVIGATION BAR
+    ═══════════════════════════════════════════════════════════════════ */
+    header {
+      background: var(--bg-header);
+      height: 58px;
+      display: flex;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-inner {
+      max-width: 1320px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .brand-logo-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: #f5f4ef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      font-size: 1.15rem;
+    }
+
+    .brand-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .nav-center-link {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+      font-family: inherit;
+    }
+
+    .nav-center-link:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .header-tagline {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      .header-tagline {
+        display: none;
+      }
+      .header-inner {
+        padding: 0 1.25rem;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       HERO / INTRO BAR
+    ═══════════════════════════════════════════════════════════════════ */
+    .hero-container {
+      max-width: 1240px;
+      width: 100%;
+      margin: 2.25rem auto 1.5rem;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-text-block {
+      max-width: 640px;
+    }
+
+    .eyebrow-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      color: #8c8370;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-headline {
+      font-family: 'Newsreader', 'Playfair Display', Georgia, serif;
+      font-size: 2.5rem;
+      font-weight: 500;
+      line-height: 1.15;
+      color: var(--c-forest);
+      letter-spacing: -0.01em;
+    }
+
+    .hero-subtitle {
+      font-size: 0.96rem;
+      color: var(--text-body);
+      margin-top: 0.45rem;
+      line-height: 1.45;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    .btn-hero-outline {
+      background: #ffffff;
+      border: 1px solid #d5d2c7;
+      color: var(--c-forest);
+      padding: 0.65rem 1.35rem;
+      border-radius: var(--radius-btn);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      font-family: inherit;
+    }
+
+    .btn-hero-outline:hover {
+      background: #faf9f6;
+      border-color: #c4c0b2;
+      transform: translateY(-1px);
+    }
+
+    .btn-hero-solid {
+      background: var(--c-forest);
+      border: 1px solid var(--c-forest);
+      color: #ffffff;
+      padding: 0.65rem 1.45rem;
+      border-radius: var(--radius-btn);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 8px rgba(28, 59, 54, 0.2);
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .btn-hero-solid:hover {
+      background: var(--c-forest-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(28, 59, 54, 0.25);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       DROPDOWN MENU (Load Puzzle)
+    ═══════════════════════════════════════════════════════════════════ */
+    .dropdown-container {
+      position: relative;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      box-shadow: var(--shadow-dropdown);
+      min-width: 270px;
+      padding: 0.5rem;
+      display: none;
+      z-index: 200;
+      animation: fadeInDropdown 0.15s ease-out;
+    }
+
+    .dropdown-menu.open {
+      display: block;
+    }
+
+    @keyframes fadeInDropdown {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .dropdown-item {
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: background 0.12s;
+      font-family: inherit;
+    }
+
+    .dropdown-item:hover {
+      background: #f5f4ef;
+    }
+
+    .dropdown-item.active {
+      background: #eef5f2;
+    }
+
+    .dropdown-item-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--c-forest);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dropdown-item-desc {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 0.35rem 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       MAIN 2-COLUMN VIEWPORT
+    ═══════════════════════════════════════════════════════════════════ */
+    main {
+      flex: 1;
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+      display: grid;
+      grid-template-columns: 560px 1fr;
+      gap: 1.75rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        grid-template-columns: 1fr;
+        max-width: 620px;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       LEFT COLUMN: SUDOKU BOARD CARD
+    ═══════════════════════════════════════════════════════════════════ */
+    .board-card {
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid var(--border-card);
+      padding: 2.25rem 2.25rem 1.75rem;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .board-grid-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.75rem;
+    }
+
+    #sudoku-grid {
+      width: 440px;
+      height: 440px;
+      max-width: 100%;
+      aspect-ratio: 1;
+      border: 2.5px solid var(--border-grid);
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      background: #ffffff;
+      user-select: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--c-forest);
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+      border-right: 1px solid var(--border-cell);
+      border-bottom: 1px solid var(--border-cell);
+    }
+
+    /* 3x3 Box Thick Dividers */
+    .cell:nth-child(3n) {
+      border-right: 2px solid var(--border-grid);
+    }
+
+    .cell:nth-child(9n) {
+      border-right: none;
+    }
+
+    /* Row borders for 3x3 blocks */
+    .cell[data-row="2"],
+    .cell[data-row="5"] {
+      border-bottom: 2px solid var(--border-grid);
+    }
+
+    .cell[data-row="8"] {
+      border-bottom: none;
+    }
+
+    /* Cell States */
+    .cell.given {
+      font-weight: 700;
+      color: #112622;
+    }
+
+    .cell.unit-tint {
+      background-color: var(--cell-bg-unit);
+    }
+
+    .cell.active-cell {
+      background-color: var(--cell-bg-active) !important;
+      outline: 2px solid var(--c-forest);
+      outline-offset: -2px;
+      z-index: 2;
+    }
+
+    .cell.warm-highlight {
+      background-color: var(--cell-bg-warm);
+    }
+
+    /* Technique Text Colors for Placed Digits */
+    .cell.ev-naked {
+      color: var(--c-naked);
+      font-weight: 700;
+    }
+
+    .cell.ev-hidden {
+      color: var(--c-hidden);
+      font-weight: 700;
+    }
+
+    .cell.ev-guess {
+      color: var(--c-guess);
+      font-weight: 700;
+    }
+
+    .cell.ev-contra {
+      color: var(--c-contra);
+      background-color: #fee2e2 !important;
+      font-weight: 700;
+    }
+
+    .cell.ev-backtrack {
+      color: var(--c-back);
+      font-weight: 700;
+    }
+
+    .cell.ev-solved {
+      color: var(--c-solved);
+      font-weight: 700;
+    }
+
+    /* Edit Mode */
+    .cell.edit-mode {
+      cursor: text;
+    }
+
+    .cell.edit-mode:hover {
+      background: #faf8f3;
+    }
+
+    .cell.edit-conflict {
+      background: #fee2e2 !important;
+      color: #dc2626 !important;
+    }
+
+    /* Pencil Marks Inside Empty Cells */
+    .pencil-wrap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      width: 100%;
+      height: 100%;
+      padding: 2px;
+      pointer-events: none;
+    }
+
+    .pencil-mark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: #94a39f;
+      line-height: 1;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       BOARD CONTROLS & TOOLBAR
+    ═══════════════════════════════════════════════════════════════════ */
+    .board-controls-divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border-cell);
+      margin-bottom: 1.25rem;
+    }
+
+    .board-toolbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-group-playback {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .btn-control {
+      background: #ffffff;
+      border: 1px solid #d5d2c7;
+      color: var(--c-forest);
+      padding: 0.52rem 1.05rem;
+      border-radius: var(--radius-btn);
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .btn-control:hover {
+      background: #faf9f6;
+      border-color: #c4c0b2;
+    }
+
+    .btn-control:active {
+      transform: scale(0.98);
+    }
+
+    .btn-control-play {
+      background: var(--c-forest);
+      border-color: var(--c-forest);
+      color: #ffffff;
+      font-weight: 600;
+      padding: 0.52rem 1.65rem;
+      box-shadow: 0 2px 6px rgba(28, 59, 54, 0.2);
+    }
+
+    .btn-control-play:hover {
+      background: var(--c-forest-hover);
+      border-color: var(--c-forest-hover);
+    }
+
+    /* Secondary Controls (Speed & Pencil) */
+    .controls-secondary {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .control-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    /* Sleek Range Slider */
+    .speed-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 65px;
+      height: 4px;
+      background: #dcd9cf;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .speed-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--c-forest);
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.1s;
+    }
+
+    .speed-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* iOS-Style Pill Switch */
+    .switch-wrap {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+    }
+
+    .switch-wrap input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-track {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #d1cebf;
+      transition: 0.2s;
+      border-radius: 20px;
+    }
+
+    .switch-track:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    input:checked + .switch-track {
+      background-color: var(--c-forest);
+    }
+
+    input:checked + .switch-track:before {
+      transform: translateX(16px);
+    }
+
+    /* Board Footnote / Step Counter */
+    .board-footnote {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1.1rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Hidden/Subtle Scrubber for smooth scrubbing */
+    .scrubber-slider {
+      width: 100%;
+      margin-top: 0.6rem;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: #e2ded4;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .scrubber-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--c-forest);
+      cursor: pointer;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       RIGHT COLUMN: 4 STACKED CARDS
+    ═══════════════════════════════════════════════════════════════════ */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    /* CARD 1: CURRENT STEP (Forest Green) */
+    .card-current-step {
+      background: var(--bg-header);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      color: #ffffff;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      height: 168px;
+      min-height: 168px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .cs-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .cs-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+    }
+
+    .cs-badge {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .cs-title {
+      font-family: 'Newsreader', 'Playfair Display', Georgia, serif;
+      font-size: 1.55rem;
+      font-weight: 400;
+      line-height: 1.2;
+      margin-top: 0.65rem;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    .cs-desc {
+      font-size: 0.86rem;
+      color: rgba(255, 255, 255, 0.78);
+      line-height: 1.45;
+      margin-top: 0.45rem;
+      height: 4.35em;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    /* CARD 2: SOLVER STATISTICS (White) */
+    .card-stats {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid var(--border-card);
+      padding: 1.15rem 1.4rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .section-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--c-forest);
+      margin-bottom: 0.75rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      text-align: center;
+      gap: 0.4rem;
+    }
+
+    .stat-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-num {
+      font-size: 1.55rem;
+      font-weight: 500;
+      color: var(--c-forest);
+      line-height: 1.1;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+
+    /* CARD 3: CALL STACK (White) */
+    .card-stack {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid var(--border-card);
+      padding: 1.15rem 1.4rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .stack-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.7rem;
+    }
+
+    .stack-meta {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stack-content {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 126px;
+      overflow-y: auto;
+      padding-right: 3px;
+    }
+
+    .stack-content::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .stack-content::-webkit-scrollbar-track {
+      background: #f4f3ec;
+      border-radius: 4px;
+    }
+
+    .stack-content::-webkit-scrollbar-thumb {
+      background: #c8c4b7;
+      border-radius: 4px;
+    }
+
+    .stack-content::-webkit-scrollbar-thumb:hover {
+      background: var(--c-forest);
+    }
+
+    .stack-empty {
+      border-left: 3px solid #8fa8a2;
+      padding-left: 10px;
+      margin: 0.35rem 0;
+    }
+
+    .stack-empty-main {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #2d3835;
+    }
+
+    .stack-empty-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .stack-frame-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #faf9f6;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.42rem 0.65rem;
+      font-size: 0.8rem;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .stack-frame-item:hover {
+      background: #f4f1ea;
+    }
+
+    .stack-frame-item.frame-guess {
+      border-left: 3.5px solid #d97706;
+      background: #fffdf5;
+      border-color: #fde68a;
+    }
+
+    .stack-frame-item.frame-backtrack {
+      border-left: 3.5px solid #9333ea;
+      background: #faf5ff;
+      border-color: #e9d5ff;
+    }
+
+    .frame-badge {
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .frame-badge-guess {
+      background: #d97706;
+      color: #ffffff;
+    }
+
+    .frame-badge-backtrack {
+      background: #9333ea;
+      color: #ffffff;
+    }
+
+    .frame-badge-parent {
+      background: #52635f;
+      color: #ffffff;
+    }
+
+    /* CARD 4: A GUIDE TO THE SOLVER (Warm Sand/Beige) */
+    .card-guide {
+      background: var(--bg-card-sand);
+      border-radius: 16px;
+      padding: 1.15rem 1.4rem;
+    }
+
+    .guide-legend-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem 0.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .guide-legend-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.82rem;
+      color: var(--text-body);
+      font-weight: 500;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════════════════════════════ */
+    footer {
+      text-align: center;
+      padding: 2.5rem 1.5rem 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      line-height: 1.7;
+      letter-spacing: 0.02em;
+    }
+
+    .footer-owners {
+      font-weight: 500;
+      color: #5d6764;
+    }
+
+    .footer-copy {
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       MODALS (Editorial Warm Theme)
+    ═══════════════════════════════════════════════════════════════════ */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(28, 59, 54, 0.4);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 1.5rem;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 1.75rem 2rem;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      position: relative;
+      animation: modalSlide 0.2s ease-out;
+    }
+
+    .modal-card.modal-lg {
+      max-width: 760px;
+    }
+
+    @keyframes modalSlide {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-title {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 1.6rem;
+      font-weight: 500;
+      color: var(--c-forest);
+    }
+
+    .modal-sub {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      color: var(--c-forest);
+    }
+
+    .quote-box {
+      background: #f5f4ef;
+      border-left: 3px solid var(--c-forest);
+      padding: 0.75rem 1rem;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 1.25rem;
+      font-style: italic;
+      color: var(--text-body);
+      font-size: 0.86rem;
+    }
+
+    .authors-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 650px) {
+      .authors-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .author-card {
+      background: #faf9f6;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .author-initials {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--c-forest);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .author-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--c-forest);
+    }
+
+    .author-role {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #8c8370;
+    }
+
+    .author-bio {
+      font-size: 0.74rem;
+      color: var(--text-body);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    .optimizations-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem 1rem;
+      background: #faf9f6;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.75rem;
+      color: var(--text-body);
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    /* Notice Toast */
+    #notice-bar {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--c-forest);
+      color: #ffffff;
+      padding: 0.65rem 1.4rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      z-index: 999;
+      animation: fadeInDropdown 0.2s;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="notice-bar"></div>
+
+  <!-- ══════════════════════ TOP NAV BAR ══════════════════════ -->
+  <header>
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-logo-badge">🐾</div>
+        <span class="brand-title">SUDOKU SOLVER</span>
+      </div>
+
+      <button class="nav-center-link" id="btn-how-it-works">How it works</button>
+
+      <span class="header-tagline">A little logic. A lot of possibility.</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════ HERO SECTION ══════════════════════ -->
+  <div class="hero-container">
+    <div class="hero-text-block">
+      <div class="eyebrow-label">THE ART OF LOGIC</div>
+      <h1 class="hero-headline">Every solution tells a story.</h1>
+      <p class="hero-subtitle">Explore the decisions behind the answer, one thoughtful step at a time.</p>
+    </div>
+
+    <div class="hero-actions">
+      <button class="btn-hero-outline" id="btn-edit-puzzles">Edit My Puzzles</button>
+
+      <div class="dropdown-container">
+        <button class="btn-hero-solid" id="btn-load-trigger">Load Puzzle</button>
+
+        <div class="dropdown-menu" id="puzzle-dropdown">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ MAIN 2-COLUMN VIEWPORT ══════════════════════ -->
+  <main>
+    <!-- LEFT COLUMN: SUDOKU BOARD CARD -->
+    <div class="board-card">
+      <div class="board-grid-wrapper">
+        <div id="sudoku-grid">
+          <!-- 81 cells populated via JS -->
+        </div>
+      </div>
+
+      <div class="board-controls-divider"></div>
+
+      <!-- Playback Controls -->
+      <div class="board-toolbar">
+        <div class="btn-group-playback">
+          <button class="btn-control" id="btn-reset">Reset</button>
+          <button class="btn-control" id="btn-back">Previous</button>
+          <button class="btn-control btn-control-play" id="btn-play">Play</button>
+          <button class="btn-control" id="btn-fwd">Next step</button>
+        </div>
+
+        <div class="controls-secondary">
+          <div class="control-item">
+            <span class="control-label">Speed</span>
+            <input type="range" id="speed-slider" min="1" max="8" value="4" class="speed-slider" title="Playback speed">
+          </div>
+
+          <div class="control-item">
+            <label class="switch-wrap">
+              <input type="checkbox" id="pencil-toggle">
+              <span class="switch-track"></span>
+            </label>
+            <span class="control-label">Pencil marks</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrubber -->
+      <input type="range" id="scrubber" min="0" max="0" value="0" class="scrubber-slider" title="Scrub through steps">
+
+      <!-- Board Footnote -->
+      <div class="board-footnote">
+        <span id="step-counter-label">Step 0 of 0</span>
+        <span>Use the left and right arrow keys to step through</span>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: 4 STACKED CARDS -->
+    <div class="right-col">
+      <!-- 1. Current Step Card (Forest Green) -->
+      <div class="card-current-step">
+        <div class="cs-header-row">
+          <span class="cs-tag">CURRENT STEP</span>
+          <span class="cs-badge" id="explanation-badge">Ready</span>
+        </div>
+
+        <h2 class="cs-title" id="step-headline">See the logic unfold.</h2>
+
+        <div class="cs-desc" id="explanation-text">
+          Press Play or use the arrow keys to explore each solver decision in real time.
+        </div>
+      </div>
+
+      <!-- 2. Solver Statistics Card (White) -->
+      <div class="card-stats">
+        <h3 class="section-title">Solver statistics</h3>
+        <div class="stats-grid">
+          <div class="stat-col">
+            <div class="stat-num" id="st-place">0</div>
+            <div class="stat-label">Placements</div>
+          </div>
+          <div class="stat-col">
+            <div class="stat-num" id="st-naked">0</div>
+            <div class="stat-label">Naked singles</div>
+          </div>
+          <div class="stat-col">
+            <div class="stat-num" id="st-hidden">0</div>
+            <div class="stat-label">Hidden singles</div>
+          </div>
+          <div class="stat-col">
+            <div class="stat-num" id="st-guess">0</div>
+            <div class="stat-label">Guesses</div>
+          </div>
+          <div class="stat-col">
+            <div class="stat-num" id="st-back">0</div>
+            <div class="stat-label">Backtracks</div>
+          </div>
+          <div class="stat-col">
+            <div class="stat-num" id="st-depth">0</div>
+            <div class="stat-label">Max depth</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Call Stack Card (White) -->
+      <div class="card-stack">
+        <div class="stack-header-row">
+          <h3 class="section-title" style="margin-bottom:0;">Call stack</h3>
+          <span class="stack-meta" id="stack-frame-count">0 FRAMES</span>
+        </div>
+
+        <div class="stack-content" id="stack-container">
+          <div class="stack-empty">
+            <div class="stack-empty-main">No active guesses</div>
+            <div class="stack-empty-sub">Solving by constraint propagation</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. A Guide to the Solver Card (Warm Sand) -->
+      <div class="card-guide">
+        <h3 class="section-title">A guide to the solver</h3>
+        <div class="guide-legend-grid">
+          <div class="legend-item">
+            <span class="legend-dot" style="background: var(--c-given);"></span>
+            <span>Given</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background: var(--c-naked);"></span>
+            <span>Naked single</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background: var(--c-hidden);"></span>
+            <span>Hidden single</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background: var(--c-guess);"></span>
+            <span>Guess (MRV)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background: var(--c-contra);"></span>
+            <span>Contradiction</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background: var(--c-back);"></span>
+            <span>Backtrack</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background: var(--c-solved);"></span>
+            <span>Solved</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════ FOOTER ══════════════════════ -->
+  <footer>
+    <div class="footer-owners">
+      Owners: 1).SHIVRAJ VIJAY MORE &nbsp; 2).DHANALAKSHMI SHRIMANT KARE &nbsp; 3).NIVEDITA SANJAY PAWAR
+    </div>
+    <div class="footer-copy">
+      Copyright © 2026: All Rights Reserved.
+    </div>
+  </footer>
+
+  <!-- ══════════════════════ MODALS ══════════════════════ -->
+
+  <!-- 1. How It Works / Authors Modal -->
+  <div class="modal-backdrop" id="how-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">How It Works & Research Architecture</h2>
+          <p class="modal-sub">Generic Sudoku Solver Using Constraint Propagation · SudokuSolverOptimized.java (17 Sept 2026)</p>
+        </div>
+        <button class="modal-close-btn" id="how-modal-close">✕</button>
+      </div>
+
+      <div class="quote-box">
+        &ldquo;A wish once imagined is now becoming a reality &mdash; Kitty🐾&rdquo;
+      </div>
+
+      <div class="authors-grid">
+        <!-- Author 1 -->
+        <div class="author-card">
+          <div class="author-initials">SM</div>
+          <div class="author-name">SHIVRAJ VIJAY MORE</div>
+          <div class="author-role">Heuristics &amp; Search Engineer</div>
+          <div class="author-bio">
+            Designed the Minimum Remaining Values (MRV) search heuristic, contradiction detection, and the live execution step recorder.
+          </div>
+        </div>
+
+        <!-- Author 2 -->
+        <div class="author-card">
+          <div class="author-initials">DK</div>
+          <div class="author-name">DHANALAKSHMI S. KARE</div>
+          <div class="author-role">Lead Algorithm Architect</div>
+          <div class="author-bio">
+            Engineered the 64-bit candidate bitmasks, O(1) doubly linked empty-cell list, LIFO undo log, and worklist generation deduplication.
+          </div>
+        </div>
+
+        <!-- Author 3 -->
+        <div class="author-card">
+          <div class="author-initials">NP</div>
+          <div class="author-name">NIVEDITA S. PAWAR</div>
+          <div class="author-role">Constraint Specialist</div>
+          <div class="author-bio">
+            Formulated seenOnce/seenTwice bitmask detection for naked &amp; hidden singles, precomputed unit tables, and filled-peer skipping.
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:0.75rem; font-weight:700; color:var(--c-forest); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em;">
+        Core Algorithmic Optimizations
+      </div>
+      <div class="optimizations-grid">
+        <div><b>1. Candidate Masks:</b> O(1) bitwise tracking</div>
+        <div><b>2. Worklist Propagation:</b> Targeted cell re-checks</div>
+        <div><b>3. Undo Log:</b> O(1) LIFO board restoration</div>
+        <div><b>4. Hidden Singles:</b> seenOnce/seenTwice bitmasks</div>
+        <div><b>5. Live Empty List:</b> Doubly linked O(1) splicing</div>
+        <div><b>6. MRV Selection:</b> Scans only live empty cells</div>
+        <div><b>7. Unit Lookups:</b> Precomputed 3×N caches</div>
+        <div><b>8. Complete-Unit Skip:</b> Fully solved units bypassed</div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-hero-solid" id="how-modal-ok">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Edit My Puzzles Modal -->
+  <div class="modal-backdrop" id="manage-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">My Puzzles & Board Editor</h2>
+          <p class="modal-sub">Save custom boards or edit the grid interactively.</p>
+        </div>
+        <button class="modal-close-btn" id="manage-close">✕</button>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+        <button class="btn-hero-solid" id="btn-toggle-edit-mode" style="flex:1; justify-content:center;">
+          ✏️ Edit Grid Interactively
+        </button>
+        <button class="btn-hero-outline" id="btn-save-current" style="flex:1;">
+          💾 Save Current Board
+        </button>
+      </div>
+
+      <div style="font-size:0.78rem; font-weight:700; color:var(--c-forest); margin-bottom:0.5rem; text-transform:uppercase;">
+        Saved Puzzles List
+      </div>
+      <div id="saved-list" style="display:flex; flex-direction:column; gap:0.4rem; max-height:200px; overflow-y:auto; margin-bottom:1rem;">
+        <!-- Populated via JS -->
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-hero-outline" id="manage-close-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Paste 81-Character Puzzle Modal -->
+  <div class="modal-backdrop" id="paste-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Paste 81-Character Puzzle</h2>
+          <p class="modal-sub">Digits 1–9 for clues, <code>0</code> or <code>.</code> for blanks. Whitespace ignored.</p>
+        </div>
+        <button class="modal-close-btn" id="paste-cancel-x">✕</button>
+      </div>
+
+      <textarea id="paste-input" rows="3" style="width:100%; border:1px solid var(--border-card); border-radius:8px; padding:0.75rem; font-family:monospace; font-size:0.85rem; outline:none; resize:none; margin-bottom:0.5rem;" placeholder="530070000600195000098000060800060003400803001700020006060000280000419005000080079"></textarea>
+      <div id="paste-error" style="color:#dc2626; font-size:0.78rem; min-height:18px;"></div>
+
+      <div class="modal-actions">
+        <button class="btn-hero-outline" id="paste-cancel">Cancel</button>
+        <button class="btn-hero-solid" id="paste-ok">Load &amp; Solve</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Save Puzzle Modal -->
+  <div class="modal-backdrop" id="save-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Save Current Puzzle</h2>
+          <p class="modal-sub">Choose a label to save this puzzle to your browser storage.</p>
+        </div>
+        <button class="modal-close-btn" id="save-cancel-x">✕</button>
+      </div>
+
+      <input type="text" id="save-name" style="width:100%; border:1px solid var(--border-card); border-radius:8px; padding:0.65rem 0.75rem; font-size:0.88rem; outline:none; margin-bottom:1rem;" placeholder="e.g. Tough Newspaper Sudoku #42">
+
+      <div class="modal-actions">
+        <button class="btn-hero-outline" id="save-cancel">Cancel</button>
+        <button class="btn-hero-solid" id="save-ok">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ JAVASCRIPT SOLVER & UI ══════════════════════ -->
+  <script>
+    /* ═══════════════════════════════════════════════════════════════════
+       SOLVER ENGINE (Constraint Propagation + MRV + Backtracking)
+    ═══════════════════════════════════════════════════════════════════ */
+    const UNIT_ROW = 0, UNIT_COL = 1, UNIT_BOX = 2;
+    const NONE_CELL = -1;
+    const MAX_STEPS = 50_000;
+    const EV = {
+      GIVEN: 'given',
+      NAKED: 'naked',
+      HIDDEN: 'hidden',
+      GUESS: 'guess',
+      CONTRA: 'contra',
+      BACKTRACK: 'backtrack',
+      SOLVED: 'solved',
+      UNSOLVABLE: 'unsolvable'
+    };
+
+    function buildSolver() {
+      const FULL = 0x1ff; // 9 bits
+      const cellRow = new Int32Array(81), cellCol = new Int32Array(81);
+      for (let i = 0; i < 81; i++) { cellRow[i] = (i / 9) | 0; cellCol[i] = i % 9; }
+      const rowBand = [0, 0, 0, 1, 1, 1, 2, 2, 2], colBand = [0, 0, 0, 1, 1, 1, 2, 2, 2];
+      function boxIdx(r, c) { return rowBand[r] * 3 + colBand[c]; }
+      function isSingle(m) { return m !== 0 && (m & (m - 1)) === 0; }
+      function lowBit(m) { return 31 - Math.clz32(m & -m); }
+      function popcount(m) {
+        m = m - ((m >>> 1) & 0x55555555);
+        m = (m & 0x33333333) + ((m >>> 2) & 0x33333333);
+        return (((m + (m >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24;
+      }
+      function maskVals(m) {
+        const a = [];
+        for (let v = 1; v <= 9; v++) if (m & (1 << (v - 1))) a.push(v);
+        return a;
+      }
+
+      const UC = [Array(9), Array(9), Array(9)];
+      for (let i = 0; i < 9; i++) {
+        UC[0][i] = Array.from({ length: 9 }, (_, c) => [i, c]);
+        UC[1][i] = Array.from({ length: 9 }, (_, r) => [r, i]);
+        const br = ((i / 3) | 0) * 3, bc = (i % 3) * 3;
+        const bx = [];
+        for (let r = br; r < br + 3; r++) for (let c = bc; c < bc + 3; c++) bx.push([r, c]);
+        UC[2][i] = bx;
+      }
+
+      function explain(type, r, c, v, opts = {}) {
+        const { depth = 0, unitType = null, unitIndex = null, candidates = [], remaining = [] } = opts;
+        function uName(ut, ui) { return ut === 0 ? `Row ${ui + 1}` : ut === 1 ? `Column ${ui + 1}` : `Box ${ui + 1}`; }
+
+        switch (type) {
+          case EV.GIVEN:
+            return {
+              title: `Starting Clue: R${r + 1}C${c + 1} = ${v}`,
+              short: `Starting clue`,
+              long: `This cell is one of the fixed digits provided in the initial puzzle, serving as an immutable anchor.`
+            };
+          case EV.NAKED:
+            return {
+              title: `Naked Single: R${r + 1}C${c + 1} = ${v}`,
+              short: `R${r + 1}C${c + 1} = ${v} — only candidate remaining`,
+              long: `All 8 other digits already appear in this cell's row, column, or 3×3 box. Therefore, only <strong>${v}</strong> is legally possible.`
+            };
+          case EV.HIDDEN: {
+            const un = uName(unitType, unitIndex);
+            return {
+              title: `Hidden Single: R${r + 1}C${c + 1} = ${v}`,
+              short: `R${r + 1}C${c + 1} = ${v} — sole cell in ${un} for ${v}`,
+              long: `Inside <strong>${un}</strong>, the digit <strong>${v}</strong> can only fit into cell R${r + 1}C${c + 1}. All peer cells are constrained.`
+            };
+          }
+          case EV.GUESS: {
+            const candStr = candidates.join(', ');
+            return {
+              title: `Guess (MRV): R${r + 1}C${c + 1} = ${v} · Depth ${depth + 1}`,
+              short: `Guess R${r + 1}C${c + 1} = ${v} (depth ${depth + 1})`,
+              long: `No direct singles remain. Selected cell R${r + 1}C${c + 1} with the Minimum Remaining Values (MRV) heuristic: only <strong>${candidates.length} options</strong> (${candStr}). Trying ${v} first.`
+            };
+          }
+          case EV.CONTRA:
+            return {
+              title: `Contradiction Encountered`,
+              short: `Dead end — 0 candidates remain`,
+              long: `An empty cell reached 0 legal candidate values. This proves an earlier guess in the search branch was invalid; backtracking initiated.`
+            };
+          case EV.BACKTRACK:
+            return {
+              title: `Backtrack: Guess ${v} at R${r + 1}C${c + 1} Rolled Back`,
+              short: `Backtrack — guess ${v} failed (depth ${depth + 1})`,
+              long: `Branch starting with ${v} led to a contradiction. Restored cell states via LIFO undo log and trying next candidate.`
+            };
+          case EV.SOLVED:
+            return {
+              title: `🎉 Puzzle Fully Solved!`,
+              short: `Puzzle solved! All 81 cells satisfied`,
+              long: `Every cell is filled and all 27 units (9 rows, 9 columns, 9 boxes) contain digits 1–9 without conflicts.`
+            };
+          case EV.UNSOLVABLE:
+            return {
+              title: `❌ No Legal Solution Exists`,
+              short: `Exhaustive search complete — no legal solution exists`,
+              long: `All candidate assignments and constraint propagation branches have been exhaustively evaluated. Every pathway reached a contradiction, proving there is <strong>no legal solution</strong> for this puzzle.`
+            };
+          default:
+            return { title: type, short: type, long: type };
+        }
+      }
+
+      function solve(flatBoard) {
+        const steps = [];
+        const board = new Int32Array(flatBoard);
+        if (!isValid(board)) return { steps, valid: false };
+
+        const rowU = new Int32Array(9), colU = new Int32Array(9), boxU = new Int32Array(9);
+        const ePrev = new Int32Array(81).fill(-1), eNext = new Int32Array(81).fill(-1);
+        let eHead = -1, eTail = -1;
+
+        function initEmpty() {
+          let last = -1; eHead = eTail = -1;
+          for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+            if (board[r * 9 + c]) continue;
+            const code = r * 9 + c;
+            ePrev[code] = last; eNext[code] = -1;
+            if (last === -1) eHead = code; else eNext[last] = code;
+            last = code;
+          }
+          eTail = last;
+        }
+
+        function rmEmpty(code) {
+          const p = ePrev[code], nx = eNext[code];
+          if (p !== -1) eNext[p] = nx; else eHead = nx;
+          if (nx !== -1) ePrev[nx] = p; else eTail = p;
+        }
+
+        function restoreEmpty(code) {
+          const p = ePrev[code], nx = eNext[code];
+          if (p !== -1) eNext[p] = code; else eHead = code;
+          if (nx !== -1) ePrev[nx] = code; else eTail = code;
+        }
+
+        function candMask(r, c) { return FULL & ~(rowU[r] | colU[c] | boxU[boxIdx(r, c)]); }
+        function markUsed(r, c, v) { const b = 1 << (v - 1), bx = boxIdx(r, c); rowU[r] |= b; colU[c] |= b; boxU[bx] |= b; }
+        function placeCell(r, c, v) { markUsed(r, c, v); rmEmpty(r * 9 + c); }
+        function unplace(r, c, v) { const b = 1 << (v - 1), bx = boxIdx(r, c); rowU[r] &= ~b; colU[c] &= ~b; boxU[bx] &= ~b; restoreEmpty(r * 9 + c); }
+        function snap() { return board.slice(); }
+
+        const guessStack = [];
+        function stackSnap() { return guessStack.map(f => ({ ...f })); }
+        function pushStep(s) { s.stack = stackSnap(); steps.push(s); }
+
+        // Initial Givens
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c];
+          if (!v) continue;
+          markUsed(r, c, v);
+        }
+        initEmpty();
+
+        // Step 0: Initial puzzle loaded with all starting clues
+        pushStep({
+          type: EV.GIVEN, row: null, col: null, val: 0, depth: 0,
+          candidates: [], unitType: null, unitIndex: null,
+          title: 'Initial Puzzle State', explainShort: 'Ready to solve',
+          explainLong: 'Press Play or use the arrow keys to explore each solver decision in real time.',
+          board: snap()
+        });
+
+        let gen = 0;
+        const cellGen = new Int32Array(81), unitGen = new Int32Array(27);
+        function enqCell(r, c, cellQ) {
+          if (board[r * 9 + c]) return;
+          const code = r * 9 + c; if (cellGen[code] === gen) return; cellGen[code] = gen; cellQ.push(code);
+        }
+        function enqUnit(ut, ui, unitQ) { const code = ut * 9 + ui; if (unitGen[code] === gen) return; unitGen[code] = gen; unitQ.push(code); }
+        function enqPeers(r, c, cellQ, unitQ) {
+          for (let cc = 0; cc < 9; cc++) if (cc !== c) enqCell(r, cc, cellQ);
+          for (let rr = 0; rr < 9; rr++) if (rr !== r) enqCell(rr, c, cellQ);
+          const sr = rowBand[r] * 3, sc = colBand[c] * 3;
+          for (let rr = sr; rr < sr + 3; rr++) for (let cc = sc; cc < sc + 3; cc++) if (rr !== r || cc !== c) enqCell(rr, cc, cellQ);
+          enqUnit(0, r, unitQ); enqUnit(1, c, unitQ); enqUnit(2, boxIdx(r, c), unitQ);
+        }
+
+        function placeRecord(r, c, v, evType, depth, unitType, unitIndex, extraOpts) {
+          board[r * 9 + c] = v; placeCell(r, c, v);
+          const ex = explain(evType, r, c, v, { depth, unitType, unitIndex, ...extraOpts });
+          pushStep({
+            type: evType, row: r, col: c, val: v, depth,
+            candidates: extraOpts.candidates || [], unitType, unitIndex,
+            title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+          });
+        }
+
+        let capped = false;
+
+        function propagate(justCode, log, depth) {
+          gen++;
+          const cellQ = [], unitQ = [];
+          if (justCode === NONE_CELL) {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) enqCell(r, c, cellQ);
+            for (let i = 0; i < 9; i++) { enqUnit(0, i, unitQ); enqUnit(1, i, unitQ); enqUnit(2, i, unitQ); }
+          } else {
+            const jr = cellRow[justCode], jc = cellCol[justCode];
+            enqPeers(jr, jc, cellQ, unitQ);
+          }
+
+          while (cellQ.length || unitQ.length) {
+            while (cellQ.length) {
+              if (steps.length >= MAX_STEPS) return 'cap';
+              const code = cellQ.shift(); cellGen[code] = 0;
+              const r = cellRow[code], c = cellCol[code];
+              if (board[r * 9 + c]) continue;
+              const mask = candMask(r, c);
+              if (!mask) {
+                const ex = explain(EV.CONTRA, r, c, 0, { depth });
+                pushStep({
+                  type: EV.CONTRA, row: r, col: c, val: 0, depth,
+                  candidates: [], unitType: null, unitIndex: null,
+                  title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+                });
+                return false;
+              }
+              if (isSingle(mask)) {
+                const v = lowBit(mask) + 1;
+                placeRecord(r, c, v, EV.NAKED, depth, null, null, { candidates: [v] });
+                log.push(r * 9 + c); enqPeers(r, c, cellQ, unitQ);
+              }
+            }
+            if (unitQ.length) {
+              if (steps.length >= MAX_STEPS) return 'cap';
+              const uc = unitQ.shift(); unitGen[uc] = 0;
+              const ut = (uc / 9) | 0, ui = uc % 9;
+              const res = checkHS(ut, ui, cellQ, unitQ, log, depth);
+              if (res === false) return false; if (res === 'cap') return 'cap';
+            }
+          }
+          return true;
+        }
+
+        function checkHS(ut, ui, cellQ, unitQ, log, depth) {
+          const uUsed = ut === 0 ? rowU[ui] : ut === 1 ? colU[ui] : boxU[ui];
+          if (uUsed === FULL) return true;
+          const cells = UC[ut][ui];
+          let seenOnce = 0, seenTwice = 0; const masks = [];
+          for (let i = 0; i < 9; i++) {
+            const [r, c] = cells[i];
+            if (board[r * 9 + c]) { masks.push(0); continue; }
+            const mask = candMask(r, c);
+            if (!mask) {
+              const ex = explain(EV.CONTRA, r, c, 0, { depth, unitType: ut, unitIndex: ui });
+              pushStep({
+                type: EV.CONTRA, row: r, col: c, val: 0, depth,
+                candidates: [], unitType: ut, unitIndex: ui,
+                title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+              });
+              return false;
+            }
+            masks.push(mask); seenTwice |= (seenOnce & mask); seenOnce |= mask;
+          }
+          if (FULL & ~seenOnce & ~uUsed) {
+            const ex = explain(EV.CONTRA, null, null, 0, { depth, unitType: ut, unitIndex: ui });
+            pushStep({
+              type: EV.CONTRA, row: null, col: null, val: 0, depth,
+              candidates: [], unitType: ut, unitIndex: ui,
+              title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+            });
+            return false;
+          }
+          const hs = seenOnce & ~seenTwice;
+          if (!hs) return true;
+          for (let v = 1; v <= 9; v++) {
+            if (steps.length >= MAX_STEPS) return 'cap';
+            const bit = 1 << (v - 1); if (!(hs & bit)) continue;
+            for (let i = 0; i < 9; i++) {
+              const [r, c] = cells[i];
+              if (board[r * 9 + c]) continue; if (!(masks[i] & bit)) continue;
+              placeRecord(r, c, v, EV.HIDDEN, depth, ut, ui, { candidates: [v] });
+              log.push(r * 9 + c); enqPeers(r, c, cellQ, unitQ); break;
+            }
+          }
+          return true;
+        }
+
+        function undoLog(log) {
+          for (let i = log.length - 1; i >= 0; i--) {
+            const code = log[i], r = cellRow[code], c = cellCol[code], v = board[r * 9 + c];
+            board[r * 9 + c] = 0; unplace(r, c, v);
+          }
+        }
+
+        function findBest() {
+          let best = -1, minC = 10;
+          for (let code = eHead; code !== -1; code = eNext[code]) {
+            const r = cellRow[code], c = cellCol[code];
+            const cnt = popcount(candMask(r, c));
+            if (cnt < minC) { minC = cnt; best = code; if (minC === 1) break; }
+          }
+          return best;
+        }
+
+        function solveBoard(justCode, depth) {
+          const log = [];
+          const res = propagate(justCode, log, depth);
+          if (res === false) { undoLog(log); return false; }
+          if (res === 'cap') { capped = true; undoLog(log); return false; }
+
+          const best = findBest();
+          if (best === -1) {
+            const ex = explain(EV.SOLVED, null, null, 0, { depth });
+            pushStep({
+              type: EV.SOLVED, row: null, col: null, val: 0, depth,
+              candidates: [], unitType: null, unitIndex: null,
+              title: ex.title, explainShort: ex.short, explainLong: ex.long, board: snap()
+            });
+            return true;
+          }
+
+          const r = cellRow[best], c = cellCol[best];
+          const mask = candMask(r, c);
+          const cands = maskVals(mask);
+
+          for (let v = 1; v <= 9; v++) {
+            if (steps.length >= MAX_STEPS) { capped = true; undoLog(log); return false; }
+            if (!(mask & (1 << (v - 1)))) continue;
+            const remaining = cands.filter(x => x > v);
+
+            guessStack.push({ depth: depth + 1, row: r, col: c, val: v, candidates: cands.slice(), remaining });
+            const exG = explain(EV.GUESS, r, c, v, { depth, candidates: cands, remaining });
+            pushStep({
+              type: EV.GUESS, row: r, col: c, val: v, depth,
+              candidates: cands.slice(), unitType: null, unitIndex: null,
+              title: exG.title, explainShort: exG.short, explainLong: exG.long, board: snap()
+            });
+
+            board[r * 9 + c] = v; placeCell(r, c, v);
+            if (solveBoard(r * 9 + c, depth + 1)) return true;
+            board[r * 9 + c] = 0; unplace(r, c, v);
+
+            guessStack.pop();
+            const exB = explain(EV.BACKTRACK, r, c, v, { depth, candidates: cands, remaining });
+            pushStep({
+              type: EV.BACKTRACK, row: r, col: c, val: v, depth,
+              candidates: cands.slice(), unitType: null, unitIndex: null,
+              title: exB.title, explainShort: exB.short, explainLong: exB.long, board: snap()
+            });
+          }
+          undoLog(log);
+          return false;
+        }
+
+        const solved = solveBoard(NONE_CELL, 0);
+        if (!solved && !capped) {
+          const exU = explain(EV.UNSOLVABLE, null, null, 0);
+          pushStep({
+            type: EV.UNSOLVABLE, row: null, col: null, val: 0, depth: 0,
+            candidates: [], unitType: null, unitIndex: null,
+            title: exU.title, explainShort: exU.short, explainLong: exU.long, board: snap()
+          });
+        }
+        return { steps, solved, capped, valid: true };
+      }
+
+      function isValid(board) {
+        const rS = new Int32Array(9), cS = new Int32Array(9), bS = new Int32Array(9);
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c]; if (!v || v > 9) continue;
+          const bit = 1 << (v - 1), bx = boxIdx(r, c);
+          if ((rS[r] & bit) || (cS[c] & bit) || (bS[bx] & bit)) return false;
+          rS[r] |= bit; cS[c] |= bit; bS[bx] |= bit;
+        }
+        return true;
+      }
+
+      function findConflicts(board) {
+        const conf = new Set();
+        const rM = Array.from({ length: 9 }, () => new Map());
+        const cM = Array.from({ length: 9 }, () => new Map());
+        const bM = Array.from({ length: 9 }, () => new Map());
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c], bx = boxIdx(r, c), code = r * 9 + c; if (!v) continue;
+          if (rM[r].has(v)) { conf.add(code); conf.add(rM[r].get(v)); } else rM[r].set(v, code);
+          if (cM[c].has(v)) { conf.add(code); conf.add(cM[c].get(v)); } else cM[c].set(v, code);
+          if (bM[bx].has(v)) { conf.add(code); conf.add(bM[bx].get(v)); } else bM[bx].set(v, code);
+        }
+        return conf;
+      }
+
+      function computeCands(board) {
+        const rU = new Int32Array(9), cU = new Int32Array(9), bU = new Int32Array(9);
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          const v = board[r * 9 + c]; if (v) { const b = 1 << (v - 1); rU[r] |= b; cU[c] |= b; bU[boxIdx(r, c)] |= b; }
+        }
+        const out = new Int32Array(81);
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          if (!board[r * 9 + c]) out[r * 9 + c] = FULL & ~(rU[r] | cU[c] | bU[boxIdx(r, c)]);
+        }
+        return out;
+      }
+
+      return { solve, isValid, findConflicts, computeCands };
+    }
+
+    const Solver = buildSolver();
+
+    /* ═══════════════════════════════════════════════════════════════════
+       BUILT-IN PUZZLES (Tested and Validated)
+    ═══════════════════════════════════════════════════════════════════ */
+    const PUZZLES = [
+      {
+        name: 'Easy (Classic)',
+        sub: 'Naked singles only · Matches Figma',
+        str: '530070000600195000098000060800060003400803001700020006060000280000419005000080079'
+      },
+      {
+        name: 'Medium',
+        sub: 'Requires hidden single deductions',
+        str: '000000000904607000076804100309701080008000300050308702007502610000403208000000000'
+      },
+      {
+        name: 'Hard',
+        sub: 'Guesses with MRV & backtracking',
+        str: '000000012000000003002300400001800005060070800000009000008500000900040500470006000'
+      },
+      {
+        name: 'Minimal (17 Clues)',
+        sub: 'Mathematically minimal starting clues',
+        str: '000000010400000000020000000000050407008000300001090000300400200050100000000806000'
+      },
+      {
+        name: 'Unsolvable Test',
+        sub: 'Valid start with no legal solution',
+        str: '300000000000003085001020000000507000004000100090000000500000073002010000000040009'
+      },
+      {
+        name: 'Invalid Test',
+        sub: 'Duplicate clue conflict detection',
+        str: '550070000600195000098000060800060003400803001700020006060000280000419005000080079'
+      }
+    ];
+
+    /* ═══════════════════════════════════════════════════════════════════
+       APP STATE
+    ═══════════════════════════════════════════════════════════════════ */
+    let steps = [], currentStep = 0, playTimer = null, isPlaying = false, showPencil = false;
+    let editMode = false, editBoard = new Int32Array(81), loadedStr = '';
+    let currentPuzzleMeta = PUZZLES[0];
+
+    const $ = id => document.getElementById(id);
+
+    /* ═══════════════════════════════════════════════════════════════════
+       DOM INITIALIZATION
+    ═══════════════════════════════════════════════════════════════════ */
+    function buildGrid() {
+      const g = $('sudoku-grid');
+      g.innerHTML = '';
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const el = document.createElement('div');
+          el.className = 'cell';
+          el.dataset.row = r;
+          el.dataset.col = c;
+          el.addEventListener('click', onCellClick);
+          g.appendChild(el);
+        }
+      }
+    }
+
+    function getCell(r, c) {
+      return document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       STEP RENDERING
+    ═══════════════════════════════════════════════════════════════════ */
+    function applyStep(idx) {
+      if (!steps.length) return;
+      if (idx < 0) idx = 0;
+      if (idx >= steps.length) idx = steps.length - 1;
+      currentStep = idx;
+
+      const step = steps[idx];
+      const board = step.board;
+      const initialBoard = steps[0].board;
+      const candMasks = showPencil ? Solver.computeCands(board) : null;
+
+      // Unit Highlights
+      const unitSet = new Set();
+      if (step.unitType !== null && step.unitIndex !== null) {
+        const ut = step.unitType, ui = step.unitIndex;
+        if (ut === 0) for (let c = 0; c < 9; c++) unitSet.add(ui * 9 + c);
+        else if (ut === 1) for (let r = 0; r < 9; r++) unitSet.add(r * 9 + ui);
+        else {
+          const br = ((ui / 3) | 0) * 3, bc = (ui % 3) * 3;
+          for (let r = br; r < br + 3; r++) for (let c = bc; c < bc + 3; c++) unitSet.add(r * 9 + c);
+        }
+      }
+
+      // Technique colors for placed cells up to current step
+      const cellEv = new Array(81).fill(null);
+      for (let i = 0; i <= idx; i++) {
+        const s = steps[i];
+        if (s.row === null) continue;
+        const code = s.row * 9 + s.col;
+        if (s.type === EV.CONTRA || s.type === EV.BACKTRACK || s.type === EV.SOLVED) continue;
+        if (board[code] !== 0) cellEv[code] = s.type;
+      }
+
+      // Render Grid Cells
+      document.querySelectorAll('.cell').forEach(cell => {
+        const r = +cell.dataset.row, c = +cell.dataset.col, code = r * 9 + c;
+        const val = board[code];
+        const isGiven = initialBoard[code] !== 0;
+
+        cell.className = 'cell';
+        if (editMode) {
+          cell.classList.add('edit-mode');
+          cell.textContent = val ? val : '';
+          return;
+        }
+
+        if (isGiven) cell.classList.add('given');
+        if (unitSet.has(code)) cell.classList.add('unit-tint');
+        if (cellEv[code]) cell.classList.add('ev-' + cellEv[code]);
+        if (step.row === r && step.col === c) cell.classList.add('active-cell');
+
+        // Warm background highlight for placed numbers matching Figma
+        if (val && !isGiven && cellEv[code]) {
+          cell.classList.add('warm-highlight');
+        }
+
+        cell.innerHTML = '';
+        if (val) {
+          cell.textContent = val;
+        } else if (showPencil && candMasks && candMasks[code]) {
+          const wrap = document.createElement('div');
+          wrap.className = 'pencil-wrap';
+          for (let v = 1; v <= 9; v++) {
+            const pm = document.createElement('div');
+            pm.className = 'pencil-mark';
+            if (candMasks[code] & (1 << (v - 1))) pm.textContent = v;
+            wrap.appendChild(pm);
+          }
+          cell.appendChild(wrap);
+        }
+      });
+
+      renderCurrentStepCard(step, idx);
+      renderStack(step);
+      updateStats(idx);
+      updateScrubber(idx);
+    }
+
+    function renderCurrentStepCard(step, idx) {
+      if (idx === 0 && step.type === EV.GIVEN) {
+        $('explanation-badge').textContent = 'Ready';
+        $('step-headline').textContent = 'See the logic unfold.';
+        $('explanation-text').textContent = 'Press Play or use the arrow keys to explore each solver decision in real time.';
+        return;
+      }
+
+      const EV_NAMES = {
+        given: 'Given Clue',
+        naked: 'Naked Single',
+        hidden: 'Hidden Single',
+        guess: 'Guess (MRV)',
+        contra: 'Contradiction',
+        backtrack: 'Backtrack',
+        solved: 'Solved',
+        unsolvable: 'Unsolvable'
+      };
+
+      $('explanation-badge').textContent = EV_NAMES[step.type] || step.type;
+      $('step-headline').textContent = step.title || `Step ${idx + 1}`;
+      $('explanation-text').innerHTML = step.explainLong || step.explainShort || '';
+    }
+
+    function renderStack(step) {
+      const container = $('stack-container');
+      const stack = step.stack || [];
+
+      $('stack-frame-count').textContent = `${stack.length} FRAME${stack.length !== 1 ? 'S' : ''}`;
+
+      if (!stack.length) {
+        container.innerHTML = `
+          <div class="stack-empty">
+            <div class="stack-empty-main">No active guesses</div>
+            <div class="stack-empty-sub">Solving by constraint propagation</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      const display = [...stack].reverse();
+      const isBacktrackStep = step.type === EV.BACKTRACK;
+
+      display.forEach((frame, di) => {
+        const isTop = di === 0;
+        const isCurrentBacktrack = isTop && isBacktrackStep;
+        const item = document.createElement('div');
+
+        if (isCurrentBacktrack) {
+          item.className = 'stack-frame-item frame-backtrack active';
+          item.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.45rem;">
+              <span class="frame-badge frame-badge-backtrack">D${frame.depth} · ↶ BACKTRACK</span>
+              <span style="font-weight:600; color:#7e22ce;">R${frame.row + 1}C${frame.col + 1}</span>
+              <span style="color:#9333ea; font-weight:600;">failed <b>${frame.val}</b></span>
+            </div>
+            <span style="font-size:0.73rem; color:#7e22ce;">rem: ${frame.remaining && frame.remaining.length ? frame.remaining.join(', ') : 'none'}</span>
+          `;
+        } else if (isTop) {
+          item.className = 'stack-frame-item frame-guess active';
+          item.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.45rem;">
+              <span class="frame-badge frame-badge-guess">D${frame.depth} · ⚡ MRV GUESS</span>
+              <span style="font-weight:600; color:var(--c-forest);">R${frame.row + 1}C${frame.col + 1}</span>
+              <span style="color:#b45309; font-weight:600;">trying <b>${frame.val}</b></span>
+            </div>
+            <span style="font-size:0.73rem; color:var(--text-muted);">of ${frame.candidates.join(', ')}</span>
+          `;
+        } else {
+          item.className = 'stack-frame-item';
+          item.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.45rem;">
+              <span class="frame-badge frame-badge-parent">D${frame.depth}</span>
+              <span style="font-weight:600; color:var(--c-forest);">R${frame.row + 1}C${frame.col + 1}</span>
+              <span style="color:var(--text-muted);">chose <b>${frame.val}</b></span>
+            </div>
+            <span style="font-size:0.73rem; color:var(--text-muted);">${frame.candidates.join(', ')}</span>
+          `;
+        }
+
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
+          getCell(frame.row, frame.col)?.classList.add('active-cell');
+        });
+        container.appendChild(item);
+      });
+    }
+
+    function updateStats(idx) {
+      if (!steps.length) return;
+      let place = 0, naked = 0, hidden = 0, guess = 0, back = 0, maxD = 0;
+      const end = Math.min(idx + 1, steps.length);
+
+      for (let i = 0; i < end; i++) {
+        const s = steps[i];
+        if (s.type === EV.NAKED) { place++; naked++; }
+        else if (s.type === EV.HIDDEN) { place++; hidden++; }
+        else if (s.type === EV.GUESS) guess++;
+        else if (s.type === EV.BACKTRACK) back++;
+        if (s.depth > maxD) maxD = s.depth;
+      }
+
+      $('st-place').textContent = place;
+      $('st-naked').textContent = naked;
+      $('st-hidden').textContent = hidden;
+      $('st-guess').textContent = guess;
+      $('st-back').textContent = back;
+      $('st-depth').textContent = maxD;
+    }
+
+    function updateScrubber(idx) {
+      const s = $('scrubber');
+      s.max = Math.max(0, steps.length - 1);
+      s.value = idx;
+      $('step-counter-label').textContent = idx === 0 ? 'Step 0 of 0' : `Step ${idx} of ${Math.max(0, steps.length - 1)}`;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PLAYBACK ENGINE
+    ═══════════════════════════════════════════════════════════════════ */
+    const SPEED_DELAYS = [1200, 600, 280, 120, 50, 20, 8, 3];
+    function getDelay() {
+      const v = +$('speed-slider').value;
+      return SPEED_DELAYS[Math.max(0, Math.min(7, v - 1))];
+    }
+
+    function playTick() {
+      if (currentStep >= steps.length - 1) {
+        stopPlay();
+        return;
+      }
+      applyStep(currentStep + 1);
+      playTimer = setTimeout(playTick, getDelay());
+    }
+
+    function startPlay() {
+      if (isPlaying) return;
+      if (currentStep >= steps.length - 1) applyStep(0);
+      isPlaying = true;
+      $('btn-play').textContent = 'Pause';
+      playTick();
+    }
+
+    function stopPlay() {
+      if (!isPlaying) return;
+      clearTimeout(playTimer);
+      isPlaying = false;
+      $('btn-play').textContent = 'Play';
+    }
+
+    function togglePlay() {
+      isPlaying ? stopPlay() : startPlay();
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PUZZLE LOADING & MANAGEMENT
+    ═══════════════════════════════════════════════════════════════════ */
+    function parsePuzzle(str) {
+      const clean = str.replace(/\s/g, '').replace(/\./g, '0');
+      if (!/^[0-9]{81}$/.test(clean)) return null;
+      return Int32Array.from(clean, ch => +ch);
+    }
+
+    function loadAndSolve(puzzleStr, meta) {
+      stopPlay();
+      const board = parsePuzzle(puzzleStr);
+      if (!board) {
+        showNotice('Invalid puzzle string — need exactly 81 digits (0 or . for blanks).');
+        return;
+      }
+
+      loadedStr = puzzleStr;
+      editBoard = board.slice();
+      if (meta) currentPuzzleMeta = meta;
+      if (editMode) toggleEditMode(false);
+
+      const result = Solver.solve(board);
+      if (!result.valid) {
+        showNotice('Puzzle has duplicate clues in a row, col, or box.');
+        renderConflictBoard(board);
+        steps = [{
+          type: EV.UNSOLVABLE, row: null, col: null, val: 0, depth: 0,
+          candidates: [], unitType: null, unitIndex: null, stack: [],
+          title: '❌ No Legal Solution Exists', explainShort: 'Duplicate clues detected.',
+          explainLong: 'This puzzle contains duplicate values in the same row, column, or 3×3 box. Therefore, there is <strong>no legal solution</strong> for this puzzle.',
+          board: board.slice()
+        }];
+        applyStep(0);
+        return;
+      }
+
+      steps = result.steps;
+      applyStep(0);
+    }
+
+    function renderConflictBoard(board) {
+      const conf = Solver.findConflicts(board);
+      document.querySelectorAll('.cell').forEach(cell => {
+        const r = +cell.dataset.row, c = +cell.dataset.col, code = r * 9 + c;
+        cell.className = 'cell';
+        cell.innerHTML = '';
+        if (board[code]) {
+          cell.textContent = board[code];
+          if (conf.has(code)) cell.classList.add('ev-contra');
+        }
+      });
+    }
+
+    function buildPuzzleDropdown() {
+      const dd = $('puzzle-dropdown');
+      dd.innerHTML = '';
+
+      PUZZLES.forEach((p, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'dropdown-item' + (currentPuzzleMeta && currentPuzzleMeta.name === p.name ? ' active' : '');
+        btn.innerHTML = `
+          <div class="dropdown-item-title">
+            <span>${p.name}</span>
+          </div>
+          <span class="dropdown-item-desc">${p.sub}</span>
+        `;
+        btn.addEventListener('click', () => {
+          dd.classList.remove('open');
+          loadAndSolve(p.str, p);
+          buildPuzzleDropdown();
+        });
+        dd.appendChild(btn);
+      });
+
+      const divider = document.createElement('div');
+      divider.className = 'dropdown-divider';
+      dd.appendChild(divider);
+
+      const pasteBtn = document.createElement('button');
+      pasteBtn.className = 'dropdown-item';
+      pasteBtn.innerHTML = `
+        <div class="dropdown-item-title">
+          <span>+ Paste 81-Character String…</span>
+        </div>
+        <span class="dropdown-item-desc">Load any custom puzzle string</span>
+      `;
+      pasteBtn.addEventListener('click', () => {
+        dd.classList.remove('open');
+        $('paste-input').value = '';
+        $('paste-error').textContent = '';
+        openModal('paste-modal');
+      });
+      dd.appendChild(pasteBtn);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       LOCAL STORAGE (My Puzzles)
+    ═══════════════════════════════════════════════════════════════════ */
+    const LS_KEY = 'sudoku-vis-custom';
+    function getSavedPuzzles() {
+      try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+    }
+    function setSavedPuzzles(arr) {
+      localStorage.setItem(LS_KEY, JSON.stringify(arr));
+    }
+
+    function renderSavedList() {
+      const list = $('saved-list');
+      const saved = getSavedPuzzles();
+      list.innerHTML = '';
+
+      if (!saved.length) {
+        list.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); padding:0.5rem 0;">No custom saved puzzles yet.</p>';
+        return;
+      }
+
+      saved.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:#faf9f6; border:1px solid var(--border-subtle); border-radius:8px; padding:0.45rem 0.75rem;';
+        row.innerHTML = `
+          <span style="font-size:0.82rem; font-weight:600; color:var(--c-forest);">${p.name}</span>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn-control" style="padding:0.25rem 0.6rem; font-size:0.75rem;" data-act="load">Load</button>
+            <button class="btn-control" style="padding:0.25rem 0.6rem; font-size:0.75rem; color:#dc2626;" data-act="del">Delete</button>
+          </div>
+        `;
+
+        row.querySelector('[data-act="load"]').addEventListener('click', () => {
+          closeModal('manage-modal');
+          loadAndSolve(p.str, { name: p.name, sub: 'Saved Custom Puzzle' });
+        });
+
+        row.querySelector('[data-act="del"]').addEventListener('click', () => {
+          const arr = getSavedPuzzles();
+          arr.splice(i, 1);
+          setSavedPuzzles(arr);
+          renderSavedList();
+        });
+
+        list.appendChild(row);
+      });
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       INTERACTIVE GRID EDIT MODE
+    ═══════════════════════════════════════════════════════════════════ */
+    function toggleEditMode(forceState) {
+      editMode = forceState !== undefined ? forceState : !editMode;
+      const toggleBtn = $('btn-toggle-edit-mode');
+      if (toggleBtn) {
+        toggleBtn.textContent = editMode ? '✓ Done Editing (Solve Grid)' : '✏️ Edit Grid Interactively';
+      }
+
+      if (!editMode) {
+        loadAndSolve(Array.from(editBoard).join(''), { name: 'Custom Edited Board', sub: 'Interactive User Input' });
+      } else {
+        if (steps.length) editBoard = steps[0].board.slice();
+        else editBoard = new Int32Array(81);
+
+        document.querySelectorAll('.cell').forEach(cell => {
+          const r = +cell.dataset.row, c = +cell.dataset.col;
+          cell.textContent = editBoard[r * 9 + c] || '';
+          cell.className = 'cell edit-mode';
+        });
+        window._editRC = null;
+        closeModal('manage-modal');
+        showNotice('Click any cell and type 1–9 or 0/Backspace to edit.');
+      }
+    }
+
+    function onCellClick() {
+      if (!editMode) return;
+      const r = +this.dataset.row, c = +this.dataset.col;
+      window._editRC = [r, c];
+      document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
+      this.classList.add('active-cell');
+    }
+
+    function moveEdit(r, c, dr, dc) {
+      const nr = Math.max(0, Math.min(8, r + dr)), nc = Math.max(0, Math.min(8, c + dc));
+      window._editRC = [nr, nc];
+      document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
+      getCell(nr, nc)?.classList.add('active-cell');
+    }
+
+    function validateEdit() {
+      const conf = Solver.findConflicts(editBoard);
+      document.querySelectorAll('.cell').forEach(cell => {
+        const r = +cell.dataset.row, c = +cell.dataset.col, code = r * 9 + c;
+        cell.classList.remove('edit-conflict');
+        if (conf.has(code)) cell.classList.add('edit-conflict');
+      });
+    }
+
+    document.addEventListener('keydown', e => {
+      if (editMode && window._editRC) {
+        const [r, c] = window._editRC;
+        if (e.key >= '1' && e.key <= '9') {
+          editBoard[r * 9 + c] = +e.key;
+          getCell(r, c).textContent = e.key;
+          validateEdit();
+        } else if (['Backspace', 'Delete', '0'].includes(e.key)) {
+          editBoard[r * 9 + c] = 0;
+          getCell(r, c).textContent = '';
+          validateEdit();
+        } else if (e.key === 'ArrowRight') moveEdit(r, c, 0, 1);
+        else if (e.key === 'ArrowLeft') moveEdit(r, c, 0, -1);
+        else if (e.key === 'ArrowDown') moveEdit(r, c, 1, 0);
+        else if (e.key === 'ArrowUp') moveEdit(r, c, -1, 0);
+        else if (e.key === 'Enter' || e.key === 'Escape') toggleEditMode(false);
+        e.preventDefault();
+        return;
+      }
+
+      if (!editMode) {
+        if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); togglePlay(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stopPlay(); applyStep(currentStep + 1); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); stopPlay(); applyStep(currentStep - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); stopPlay(); applyStep(0); }
+        else if (e.key === 'End') { e.preventDefault(); stopPlay(); applyStep(steps.length - 1); }
+      }
+    });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       NOTICES & MODALS
+    ═══════════════════════════════════════════════════════════════════ */
+    function showNotice(msg) {
+      const bar = $('notice-bar');
+      bar.textContent = msg;
+      bar.style.display = 'block';
+      setTimeout(() => { bar.style.display = 'none'; }, 4000);
+    }
+
+    function openModal(id) { $(id)?.classList.add('open'); }
+    function closeModal(id) { $(id)?.classList.remove('open'); }
+
+    ['how', 'manage', 'paste', 'save'].forEach(id => {
+      $(`${id}-modal`)?.addEventListener('click', e => {
+        if (e.target === $(`${id}-modal`)) closeModal(`${id}-modal`);
+      });
+    });
+
+    $('btn-how-it-works')?.addEventListener('click', () => openModal('how-modal'));
+    $('how-modal-close')?.addEventListener('click', () => closeModal('how-modal'));
+    $('how-modal-ok')?.addEventListener('click', () => closeModal('how-modal'));
+
+    $('btn-edit-puzzles')?.addEventListener('click', () => {
+      renderSavedList();
+      openModal('manage-modal');
+    });
+    $('manage-close')?.addEventListener('click', () => closeModal('manage-modal'));
+    $('manage-close-btn')?.addEventListener('click', () => closeModal('manage-modal'));
+
+    $('btn-toggle-edit-mode')?.addEventListener('click', () => toggleEditMode());
+
+    $('btn-save-current')?.addEventListener('click', () => {
+      closeModal('manage-modal');
+      $('save-name').value = '';
+      openModal('save-modal');
+    });
+
+    $('save-cancel')?.addEventListener('click', () => closeModal('save-modal'));
+    $('save-cancel-x')?.addEventListener('click', () => closeModal('save-modal'));
+    $('save-ok')?.addEventListener('click', () => {
+      const name = $('save-name').value.trim() || 'My Custom Sudoku';
+      if (loadedStr) {
+        const arr = getSavedPuzzles();
+        arr.push({ name, str: loadedStr });
+        setSavedPuzzles(arr);
+        showNotice(`Saved "${name}" successfully!`);
+      }
+      closeModal('save-modal');
+    });
+
+    $('btn-load-trigger')?.addEventListener('click', e => {
+      e.stopPropagation();
+      $('puzzle-dropdown').classList.toggle('open');
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#puzzle-dropdown') && !e.target.closest('#btn-load-trigger')) {
+        $('puzzle-dropdown')?.classList.remove('open');
+      }
+    });
+
+    $('paste-cancel')?.addEventListener('click', () => closeModal('paste-modal'));
+    $('paste-cancel-x')?.addEventListener('click', () => closeModal('paste-modal'));
+    $('paste-ok')?.addEventListener('click', () => {
+      const str = $('paste-input').value;
+      const board = parsePuzzle(str);
+      if (!board) {
+        $('paste-error').textContent = 'Invalid — need exactly 81 digits (0 or . for blanks).';
+        return;
+      }
+      closeModal('paste-modal');
+      loadAndSolve(str.replace(/\s/g, '').replace(/\./g, '0'), { name: 'Pasted Puzzle', sub: 'Custom Input' });
+    });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       CONTROLS WIRING
+    ═══════════════════════════════════════════════════════════════════ */
+    $('btn-reset')?.addEventListener('click', () => { stopPlay(); applyStep(0); });
+    $('btn-back')?.addEventListener('click', () => { stopPlay(); applyStep(currentStep - 1); });
+    $('btn-fwd')?.addEventListener('click', () => { stopPlay(); applyStep(currentStep + 1); });
+    $('btn-play')?.addEventListener('click', togglePlay);
+
+    $('scrubber')?.addEventListener('input', e => {
+      stopPlay();
+      applyStep(+e.target.value);
+    });
+
+    $('pencil-toggle')?.addEventListener('change', e => {
+      showPencil = e.target.checked;
+      applyStep(currentStep);
+    });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       INITIAL BOOTSTRAP
+    ═══════════════════════════════════════════════════════════════════ */
+    buildGrid();
+    buildPuzzleDropdown();
+    loadAndSolve(PUZZLES[0].str, PUZZLES[0]); // Loads the Easy/Classic puzzle matching Figma!
+  </script>
+</body>
+
+</html>
