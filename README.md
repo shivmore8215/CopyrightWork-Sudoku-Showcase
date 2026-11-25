@@ -332,15 +332,15 @@ Putting everything together, here is the complete execution pipeline from `solve
 
 ### Verified Trace Metrics Across All 6 Built-In Puzzles
 
-The table below lists exact counts produced by the embedded solver engine in [SudokuVisualizer.html](SudokuVisualizer.html):
+The table below lists exact counts produced by the embedded solver engine in [SudokuVisualizer](SudokuVisualizer.html):
 
 | Built-In Puzzle        | Starting Clues | Total Steps | Naked Singles | Hidden Singles | MRV Guesses | Contradictions | Backtracks | Max Depth | Outcome                                   |
 | ---------------------- | -------------: | ----------: | ------------: | -------------: | ----------: | -------------: | ---------: | --------: | ----------------------------------------- |
-| **Easy (Classic)**     |             30 |          53 |            51 |              0 |           0 |              0 |          0 |         0 | Solved (pure Naked Singles)               |
-| **Medium**             |             30 |         232 |           186 |              4 |          18 |              9 |         13 |         5 | Solved (Deduction + MRV + Backtracking)   |
-| **Hard**               |             21 |         667 |           324 |            151 |          81 |             38 |         71 |        13 | Solved (Deep MRV search tree)             |
-| **Minimal (17 Clues)** |             17 |          66 |            45 |             19 |           0 |              0 |          0 |         0 | Solved (0 guesses despite 17 clues!)      |
-| **Unsolvable Test**    |             18 |          59 |            21 |             30 |           2 |              2 |          2 |         1 | Exhaustive proof: No legal solution       |
+| **Easy (Classic)**     |             30 |          52 |            51 |              0 |           0 |              0 |          0 |         0 | Solved (pure Naked Singles)               |
+| **Medium**             |             30 |         231 |           186 |              4 |          18 |              9 |         13 |         5 | Solved (Deduction + MRV + Backtracking)   |
+| **Hard**               |             21 |         666 |           324 |            151 |          81 |             38 |         71 |        13 | Solved (Deep MRV search tree)             |
+| **Minimal (17 Clues)** |             17 |          65 |            45 |             19 |           0 |              0 |          0 |         0 | Solved (0 guesses despite 17 clues!)      |
+| **Unsolvable Test**    |             18 |          58 |            21 |             30 |           2 |              2 |          2 |         1 | Exhaustive proof: No legal solution       |
 | **Invalid Test**       |             30 |           0 |             0 |              0 |           0 |              — |          0 |         0 | Rejected upfront (duplicate `5` in Row 1) |
 
 _(Note: `Backtracks` can exceed `Contradictions` because when every candidate at a guess node fails, popping back out of that parent guess also records a backtrack step.)_

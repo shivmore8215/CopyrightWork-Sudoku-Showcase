@@ -1028,6 +1028,8 @@
       padding: 1.75rem 2rem;
       max-width: 580px;
       width: 100%;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
       position: relative;
       animation: modalSlide 0.2s ease-out;
@@ -1160,7 +1162,78 @@
       padding: 1rem;
       font-size: 0.75rem;
       color: var(--text-body);
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .readme-callout {
+      background: var(--bg-card-sand);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .readme-callout-body {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .readme-callout-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--c-forest);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .readme-callout-desc {
+      font-size: 0.78rem;
+      color: var(--text-body);
+      line-height: 1.45;
+    }
+
+    .readme-url-link {
+      display: inline-block;
+      margin-top: 0.3rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--c-forest);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      word-break: break-all;
+      transition: color 0.15s ease;
+    }
+
+    .readme-url-link:hover {
+      color: var(--c-forest-hover);
+    }
+
+    .btn-readme-link {
+      background: #ffffff;
+      border: 1px solid #d5d2c7;
+      color: var(--c-forest);
+      padding: 0.58rem 1.05rem;
+      border-radius: var(--radius-btn);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .btn-readme-link:hover {
+      background: #faf9f6;
+      border-color: var(--c-forest);
+      transform: translateY(-1px);
     }
 
     .modal-actions {
@@ -1447,6 +1520,21 @@
         <div><b>6. MRV Selection:</b> Scans only live empty cells</div>
         <div><b>7. Unit Lookups:</b> Precomputed 3×N caches</div>
         <div><b>8. Complete-Unit Skip:</b> Fully solved units bypassed</div>
+      </div>
+
+      <div class="readme-callout">
+        <div class="readme-callout-body">
+          <div class="readme-callout-title">Full Walkthrough &amp; README Notes</div>
+          <div class="readme-callout-desc">
+            Read our step-by-step guide, visual diagrams, and solver notes to see how every deduction works:
+          </div>
+          <a class="readme-url-link" href="https://shivmore8215.github.io/CopyrightWork-Sudoku-Showcase/" target="_blank" rel="noopener noreferrer">
+            https://shivmore8215.github.io/CopyrightWork-Sudoku-Showcase/
+          </a>
+        </div>
+        <a class="btn-readme-link" href="https://shivmore8215.github.io/CopyrightWork-Sudoku-Showcase/" target="_blank" rel="noopener noreferrer">
+          Read README Notes ↗
+        </a>
       </div>
 
       <div class="modal-actions">
