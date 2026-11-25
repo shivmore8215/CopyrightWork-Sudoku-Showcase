@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sudoku Solver Visualizer — The Art of Logic</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
 
   <!-- Google Fonts: Inter & Newsreader -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,13 +26,38 @@
   <header>
     <div class="header-inner">
       <div class="brand-group">
-        <div class="brand-logo-badge">🐾</div>
-        <span class="brand-title">SUDOKU SOLVER</span>
+        <div class="brand-logo-badge">
+          <img src="assets/images/favicon.svg" alt="Sudoku Solver Logo" class="brand-logo-img">
+        </div>
+        <div class="brand-copy">
+          <span class="brand-title">SUDOKU SOLVER</span>
+          <span class="brand-sub">Generic N×N · Bitmask &amp; MRV</span>
+        </div>
       </div>
 
-      <button class="nav-center-link" id="btn-how-it-works">How it works</button>
+      <nav class="header-nav" aria-label="Primary navigation">
+        <button class="nav-center-link" id="btn-how-it-works">
+          <svg class="line-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2.2" y="2.2" width="4.8" height="4.8" rx="1"/>
+            <rect x="9" y="2.2" width="4.8" height="4.8" rx="1"/>
+            <rect x="2.2" y="9" width="4.8" height="4.8" rx="1"/>
+            <path d="M9 11.4h4.8M11.4 9v4.8"/>
+          </svg>
+          <span>How it works</span>
+        </button>
+        <button class="nav-center-link" id="btn-human-brain">
+          <svg class="line-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 2.2a3.8 3.8 0 0 0-2.4 6.75c.5.42.85 1 .95 1.65h2.9c.1-.65.45-1.23.95-1.65A3.8 3.8 0 0 0 8 2.2Z"/>
+            <path d="M6.4 12.6h3.2M6.9 14.3h2.2"/>
+          </svg>
+          <span>How human brain approaches</span>
+        </button>
+      </nav>
 
-      <span class="header-tagline">A little logic. A lot of possibility.</span>
+      <div class="header-tagline-badge">
+        <span class="header-live-dot" aria-hidden="true"></span>
+        <span class="header-tagline">A little logic. A lot of possibility.</span>
+      </div>
     </div>
   </header>
 
@@ -327,13 +353,27 @@
 
       <div class="modal-btn-row">
         <button class="btn-hero-solid" id="btn-toggle-edit-mode" style="flex:1; justify-content:center;">
-          ✏️ Edit Grid Interactively
+          <svg class="line-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5.5 12.5 2.5 13.5l1-3 8-8Z"/>
+            <path d="m10 4 2 2"/>
+          </svg>
+          Edit Grid Interactively
         </button>
         <button class="btn-hero-outline" id="btn-clear-grid" style="justify-content:center;">
-          🧹 Clear Grid
+          <svg class="line-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2.5 4.5h11"/>
+            <path d="M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5"/>
+            <path d="M4 4.5 4.7 13a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L12 4.5"/>
+          </svg>
+          Clear Grid
         </button>
         <button class="btn-hero-outline" id="btn-save-current" style="flex:1; justify-content:center;">
-          💾 Save Current Board
+          <svg class="line-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 2.5h8.2L13.5 4.8V13a.8.8 0 0 1-.8.8H3.3a.8.8 0 0 1-.8-.8V3.3a.8.8 0 0 1 .8-.8Z"/>
+            <path d="M5.2 2.5v3.3h5V2.5"/>
+            <path d="M5.2 13.8V9.5h5.6v4.3"/>
+          </svg>
+          Save Current Board
         </button>
       </div>
 
@@ -420,6 +460,93 @@
         <button class="btn-hero-outline" id="size-cancel">Cancel</button>
         <button class="btn-hero-outline" id="size-apply-empty">Empty Grid (Edit)</button>
         <button class="btn-hero-solid" id="size-apply-generate">Generate &amp; Solve</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. How Human Brain Approaches Modal -->
+  <div class="modal-backdrop" id="human-brain-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">How the Human Brain Approaches Sudoku</h2>
+          <p class="modal-sub">How human intuition maps directly to this solver's logic across any board size</p>
+        </div>
+        <button class="modal-close-btn" id="human-brain-close">✕</button>
+      </div>
+
+      <div class="quote-box">
+        People rarely guess blindly cell by cell — we scan for forced numbers, keep tiny pencil marks in tight squares, and only test a hypothesis when pure deduction pauses.
+      </div>
+
+      <div class="brain-steps-list">
+        <div class="brain-step-card">
+          <div class="brain-step-num">1</div>
+          <div>
+            <div class="brain-step-title">Cross-Out Elimination (Candidate Bitmasks)</div>
+            <div class="brain-step-meta">
+              <div><span class="brain-tag">Human mind:</span> Look along a cell's row, column, and box to cross out digits that are already used.</div>
+              <div><span class="brain-tag-code">Solver mirror:</span> <code>candidateMask()</code> merges row, column, and box masks in one bitwise check for any N×N grid.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="brain-step-card">
+          <div class="brain-step-num">2</div>
+          <div>
+            <div class="brain-step-title">Spot the Lone Survivor (Naked Single)</div>
+            <div class="brain-step-meta">
+              <div><span class="brain-tag">Human mind:</span> "Every other number is blocked here, so this empty square has only one legal digit left."</div>
+              <div><span class="brain-tag-code">Solver mirror:</span> Immediately fills any cell with 1 candidate bit, then ripples updates only to affected peers.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="brain-step-card">
+          <div class="brain-step-num">3</div>
+          <div>
+            <div class="brain-step-title">Hunt for a Digit's Only Home (Hidden Single)</div>
+            <div class="brain-step-meta">
+              <div><span class="brain-tag">Human mind:</span> Scan an entire row, column, or box and ask: "Where can a missing digit like 7 still fit?"</div>
+              <div><span class="brain-tag-code">Solver mirror:</span> <code>checkHiddenSingles()</code> finds digits that appear as a candidate in just one cell of a unit.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="brain-step-card">
+          <div class="brain-step-num">4</div>
+          <div>
+            <div class="brain-step-title">Pencil Marks &amp; Best-Odds Guessing (MRV)</div>
+            <div class="brain-step-meta">
+              <div><span class="brain-tag">Human mind:</span> When logic stalls, jot pencil marks and pick a 50/50 square with just 2 options instead of 7.</div>
+              <div><span class="brain-tag-code">Solver mirror:</span> The Minimum Remaining Values (MRV) heuristic always branches on the tightest empty cell first.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="brain-step-card">
+          <div class="brain-step-num">5</div>
+          <div>
+            <div class="brain-step-title">Spot Dead Ends &amp; Rewind (Contradiction &amp; Backtrack)</div>
+            <div class="brain-step-meta">
+              <div><span class="brain-tag">Human mind:</span> Notice a clash ("two 5s forced in one box!") and erase steps back to your last assumption.</div>
+              <div><span class="brain-tag-code">Solver mirror:</span> Dual contradiction detection halts immediately and the LIFO undo log restores the board cleanly.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="readme-callout">
+        <div class="readme-callout-body">
+          <div class="readme-callout-title">Watch Human Logic Step-by-Step</div>
+          <div class="readme-callout-desc">
+            Enable <strong>Pencil marks</strong> and try a <strong>Medium (Hidden Singles)</strong> or <strong>Hard</strong> puzzle across 4×4, 6×6, 9×9, or 16×16 to see each mental step highlighted live.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-hero-solid" id="human-brain-ok">Got it</button>
       </div>
     </div>
   </div>

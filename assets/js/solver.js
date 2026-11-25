@@ -157,13 +157,13 @@
           };
         case EV.SOLVED:
           return {
-            title: `🎉 Puzzle Fully Solved!`,
+            title: `✓ Puzzle Fully Solved!`,
             short: `Puzzle solved! All ${totalCells} cells satisfied`,
             long: `Every cell is filled and all ${3 * n} units (${n} rows, ${n} columns, ${n} boxes of ${boxRows}×${boxCols}) contain ${valWord} 1–${n} without conflicts.`
           };
         case EV.UNSOLVABLE:
           return {
-            title: `❌ No Legal Solution Exists`,
+            title: `✕ No Legal Solution Exists`,
             short: `Exhaustive search complete — no legal solution exists`,
             long: `All candidate assignments and constraint propagation branches have been exhaustively evaluated. Every pathway reached a contradiction, proving there is <strong>no legal solution</strong> for this puzzle.`
           };

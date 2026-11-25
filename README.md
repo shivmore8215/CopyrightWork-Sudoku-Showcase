@@ -4,7 +4,7 @@ An editorial-grade, publication-ready **Sudoku Solver** and **Interactive Step-b
 
 Designed to be walked through live with colleagues or studied independently — every concept below is explained **from the ground up**, with **real step-by-step examples** and **custom diagrams** pulled directly from the solver's actual execution traces.
 
-![Interactive Visualizer Reference](figma_design.png)
+![Interactive Visualizer Reference](assets/images/SudokuVisualizer.png)
 
 ---
 

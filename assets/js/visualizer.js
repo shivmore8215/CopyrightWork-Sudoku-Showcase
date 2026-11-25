@@ -322,7 +322,7 @@
         item.className = 'stack-frame-item frame-guess active';
         item.innerHTML = `
           <div style="display:flex; align-items:center; gap:0.45rem;">
-            <span class="frame-badge frame-badge-guess">D${frame.depth} · ⚡ MRV GUESS</span>
+            <span class="frame-badge frame-badge-guess">D${frame.depth} · <svg class="line-icon-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.5 3.5 9H8l-1 5.5L12.5 7H8l1-5.5Z"/></svg> MRV GUESS</span>
             <span style="font-weight:600; color:var(--c-forest);">R${frame.row + 1}C${frame.col + 1}</span>
             <span style="color:#b45309; font-weight:600;">trying <b>${frame.val}</b></span>
           </div>
@@ -449,7 +449,7 @@
         unitType: null,
         unitIndex: null,
         stack: [],
-        title: '❌ No Legal Solution Exists',
+        title: '✕ No Legal Solution Exists',
         explainShort: 'Duplicate clues detected.',
         explainLong: `This ${currentN}×${currentN} puzzle contains duplicate values in the same row, column, or ${currentBoxRows}×${currentBoxCols} box. Therefore, there is <strong>no legal solution</strong> for this puzzle.`,
         board: board.slice()
@@ -588,7 +588,17 @@
     genBtn.className = 'dropdown-item';
     genBtn.innerHTML = `
       <div class="dropdown-item-title">
-        <span>🎲 Generate Random ${currentN}×${currentN} Puzzle</span>
+        <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+          <svg class="line-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2.2" y="2.2" width="11.6" height="11.6" rx="2.2"/>
+            <circle cx="5.5" cy="5.5" r="0.8" fill="currentColor" stroke="none"/>
+            <circle cx="10.5" cy="5.5" r="0.8" fill="currentColor" stroke="none"/>
+            <circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none"/>
+            <circle cx="5.5" cy="10.5" r="0.8" fill="currentColor" stroke="none"/>
+            <circle cx="10.5" cy="10.5" r="0.8" fill="currentColor" stroke="none"/>
+          </svg>
+          Generate Random ${currentN}×${currentN} Puzzle
+        </span>
       </div>
       <span class="dropdown-item-desc">Create &amp; solve a fresh ${currentBoxRows}×${currentBoxCols} board</span>
     `;
@@ -728,7 +738,9 @@
     const heroEditBtn = $('btn-edit-puzzles');
 
     if (toggleBtn) {
-      toggleBtn.textContent = editMode ? '✓ Done Editing (Solve Grid)' : '✏️ Edit Grid Interactively';
+      toggleBtn.innerHTML = editMode
+        ? '✓ Done Editing (Solve Grid)'
+        : `<svg class="line-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5.5 12.5 2.5 13.5l1-3 8-8Z"/><path d="m10 4 2 2"/></svg> Edit Grid Interactively`;
     }
     if (heroEditBtn) {
       heroEditBtn.textContent = editMode ? '✓ Done Editing (Solve)' : 'Edit My Puzzles';
@@ -802,12 +814,15 @@
   }
 
   document.addEventListener('keydown', e => {
+    const anyModalOpen = document.querySelector('.modal-backdrop.open');
+    if (e.key === 'Escape' && anyModalOpen) {
+      ['how', 'human-brain', 'manage', 'paste', 'save', 'size'].forEach(id => closeModal(`${id}-modal`));
+      return;
+    }
+
     // Ignore global shortcuts while typing in a modal input/textarea
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') {
-      if (e.key === 'Escape') {
-        ['how', 'manage', 'paste', 'save', 'size'].forEach(id => closeModal(`${id}-modal`));
-      }
       return;
     }
 
@@ -888,7 +903,7 @@
   function openModal(id) { $(id)?.classList.add('open'); }
   function closeModal(id) { $(id)?.classList.remove('open'); }
 
-  ['how', 'manage', 'paste', 'save', 'size'].forEach(id => {
+  ['how', 'human-brain', 'manage', 'paste', 'save', 'size'].forEach(id => {
     $(`${id}-modal`)?.addEventListener('click', e => {
       if (e.target === $(`${id}-modal`)) closeModal(`${id}-modal`);
     });
@@ -897,6 +912,10 @@
   $('btn-how-it-works')?.addEventListener('click', () => openModal('how-modal'));
   $('how-modal-close')?.addEventListener('click', () => closeModal('how-modal'));
   $('how-modal-ok')?.addEventListener('click', () => closeModal('how-modal'));
+
+  $('btn-human-brain')?.addEventListener('click', () => openModal('human-brain-modal'));
+  $('human-brain-close')?.addEventListener('click', () => closeModal('human-brain-modal'));
+  $('human-brain-ok')?.addEventListener('click', () => closeModal('human-brain-modal'));
 
   $('btn-edit-puzzles')?.addEventListener('click', () => {
     if (editMode) {
