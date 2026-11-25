@@ -332,7 +332,7 @@ Putting everything together, here is the complete execution pipeline from `solve
 
 ### Verified Trace Metrics Across All 6 Built-In Puzzles
 
-The table below lists exact counts produced by the embedded solver engine in [SudokuVisualizer](SudokuVisualizer.html):
+The table below lists exact counts produced by the embedded solver engine in [SudokuVisualizer](SudokuVisualizer):
 
 | Built-In Puzzle        | Starting Clues | Total Steps | Naked Singles | Hidden Singles | MRV Guesses | Contradictions | Backtracks | Max Depth | Outcome                                   |
 | ---------------------- | -------------: | ----------: | ------------: | -------------: | ----------: | -------------: | ---------: | --------: | ----------------------------------------- |
