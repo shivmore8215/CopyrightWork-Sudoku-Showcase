@@ -107,7 +107,14 @@
     }
 
     function explain(type, r, c, v, opts = {}) {
-      const { depth = 0, unitType = null, unitIndex = null, candidates = [] } = opts;
+      const {
+        depth = 0,
+        unitType = null,
+        unitIndex = null,
+        candidates = [],
+        remaining = [],
+        undoneCount = 0
+      } = opts;
       const valWord = n <= 9 ? 'digits' : 'values';
       const valSing = n <= 9 ? 'digit' : 'value';
       function uName(ut, ui) {
@@ -125,36 +132,47 @@
           return {
             title: `Naked Single: R${r + 1}C${c + 1} = ${v}`,
             short: `R${r + 1}C${c + 1} = ${v} — only candidate remaining`,
-            long: `All ${n - 1} other ${valWord} already appear in this cell's row, column, or ${boxRows}×${boxCols} box. Therefore, only <strong>${v}</strong> is legally possible.`
+            long: `All ${n - 1} other ${valWord} already appear in this cell's row, column, or ${boxRows}×${boxCols} box (polled from <code>cellQueue</code>). Therefore, only <strong>${v}</strong> is legally possible; peers are enqueued for ripple checks.`
           };
         case EV.HIDDEN: {
           const un = uName(unitType, unitIndex);
           return {
             title: `Hidden Single: R${r + 1}C${c + 1} = ${v}`,
             short: `R${r + 1}C${c + 1} = ${v} — sole cell in ${un} for ${v}`,
-            long: `Inside <strong>${un}</strong>, the ${valSing} <strong>${v}</strong> can only fit into cell R${r + 1}C${c + 1}. All peer cells are constrained.`
+            long: `Inside <strong>${un}</strong> (polled from <code>unitQueue</code>), the ${valSing} <strong>${v}</strong> appeared in only one cell via <code>seenOnce &amp; ~seenTwice</code>: R${r + 1}C${c + 1}.`
           };
         }
         case EV.GUESS: {
           const candStr = candidates.join(', ');
+          const idxInCands = candidates.indexOf(v);
+          const tryNote = idxInCands <= 0
+            ? `Trying <strong>${v}</strong> first`
+            : `Previous option failed; now trying <strong>${v}</strong>`;
           return {
             title: `Guess (MRV): R${r + 1}C${c + 1} = ${v} · Depth ${depth + 1}`,
             short: `Guess R${r + 1}C${c + 1} = ${v} (depth ${depth + 1})`,
-            long: `No direct singles remain. Selected cell R${r + 1}C${c + 1} with the Minimum Remaining Values (MRV) heuristic: only <strong>${candidates.length} options</strong> (${candStr}). Trying ${v} first.`
+            long: `Propagation stalled. <code>findBestCell()</code> chose R${r + 1}C${c + 1} with Minimum Remaining Values: <strong>${candidates.length} options</strong> (${candStr}). ${tryNote} and recursing into <code>solveBoard()</code>.`
           };
         }
         case EV.CONTRA:
           return {
             title: `Contradiction Encountered`,
             short: `Dead end — 0 candidates remain`,
-            long: `An empty cell or unit reached 0 legal placements. This proves an earlier guess in the search branch was invalid; backtracking initiated.`
+            long: `An empty cell or unit reached 0 legal placements. Propagation halts immediately and triggers LIFO <code>undo(board, log)</code>.`
           };
-        case EV.BACKTRACK:
+        case EV.BACKTRACK: {
+          const undoNote = undoneCount > 0
+            ? `LIFO <code>undo(board, log)</code> cleared <strong>${undoneCount}</strong> propagated cell${undoneCount !== 1 ? 's' : ''} and unplaced R${r + 1}C${c + 1} = ${v}.`
+            : `Unplaced guess R${r + 1}C${c + 1} = ${v} (0 propagated cells to undo).`;
+          const nextNote = remaining.length
+            ? `Next candidate to try: <strong>${remaining[0]}</strong>.`
+            : `No candidates remain at R${r + 1}C${c + 1}; unwinding to caller frame.`;
           return {
             title: `Backtrack: Guess ${v} at R${r + 1}C${c + 1} Rolled Back`,
             short: `Backtrack — guess ${v} failed (depth ${depth + 1})`,
-            long: `Branch starting with ${v} led to a contradiction. Restored cell states via LIFO undo log and trying next candidate.`
+            long: `Branch starting with <strong>${v}</strong> failed. ${undoNote} ${nextNote}`
           };
+        }
         case EV.SOLVED:
           return {
             title: `✓ Puzzle Fully Solved!`,
@@ -538,7 +556,9 @@
         return true;
       }
 
+      let lastUndone = [];
       function undoLog(log) {
+        const undone = [];
         for (let i = log.length - 1; i >= 0; i--) {
           const code = log[i];
           const r = cellRow[code];
@@ -546,7 +566,9 @@
           const v = board[code];
           board[code] = 0;
           unplace(r, c, v);
+          undone.push(code);
         }
+        lastUndone = undone;
       }
 
       function findBest() {
@@ -566,10 +588,27 @@
       }
 
       function solveBoard(justCode, depth) {
+        if (recordSteps && depth === 0) {
+          guessStack.push({
+            depth: 0,
+            row: null,
+            col: null,
+            val: 0,
+            candidates: [],
+            remaining: [],
+            isRoot: true
+          });
+        }
         const log = [];
+        function exitFail() {
+          undoLog(log);
+          if (recordSteps && depth === 0) guessStack.pop();
+          return false;
+        }
+
         const res = propagate(justCode, log, depth);
-        if (res === false) { undoLog(log); return false; }
-        if (res === 'cap') { capped = true; undoLog(log); return false; }
+        if (res === false) return exitFail();
+        if (res === 'cap') { capped = true; return exitFail(); }
 
         const best = findBest();
         if (best === -1) {
@@ -583,12 +622,23 @@
         const cands = maskVals(mask);
 
         for (let v = 1; v <= n; v++) {
-          if (stepCount >= maxSteps) { capped = true; undoLog(log); return false; }
+          if (stepCount >= maxSteps) { capped = true; return exitFail(); }
           if ((mask & BITS[v]) === 0n) continue;
           const remaining = cands.filter(x => x > v);
 
+          board[best] = v;
+          placeCell(r, c, v);
+
           if (recordSteps) {
-            guessStack.push({ depth: depth + 1, row: r, col: c, val: v, candidates: cands.slice(), remaining });
+            guessStack.push({
+              depth: depth + 1,
+              row: r,
+              col: c,
+              val: v,
+              candidates: cands.slice(),
+              remaining,
+              isRoot: false
+            });
             const exG = explain(EV.GUESS, r, c, v, { depth, candidates: cands, remaining });
             pushStep({
               type: EV.GUESS,
@@ -608,15 +658,19 @@
             stepCount++;
           }
 
-          board[best] = v;
-          placeCell(r, c, v);
           if (solveBoard(best, depth + 1)) return true;
           board[best] = 0;
           unplace(r, c, v);
+          if (capped) return exitFail();
 
           if (recordSteps) {
-            guessStack.pop();
-            const exB = explain(EV.BACKTRACK, r, c, v, { depth, candidates: cands, remaining });
+            const undone = [best, ...lastUndone];
+            const exB = explain(EV.BACKTRACK, r, c, v, {
+              depth,
+              candidates: cands,
+              remaining,
+              undoneCount: lastUndone.length
+            });
             pushStep({
               type: EV.BACKTRACK,
               row: r,
@@ -624,6 +678,7 @@
               val: v,
               depth,
               candidates: cands.slice(),
+              undone,
               unitType: null,
               unitIndex: null,
               title: exB.title,
@@ -631,12 +686,12 @@
               explainLong: exB.long,
               board: snap()
             });
+            guessStack.pop();
           } else {
             stepCount++;
           }
         }
-        undoLog(log);
-        return false;
+        return exitFail();
       }
 
       const solved = solveBoard(NONE_CELL, 0);

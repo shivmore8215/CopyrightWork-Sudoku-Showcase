@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="assets/css/visualizer.css">
-  <script src="assets/js/solver.js" defer></script>
-  <script src="assets/js/puzzles.js" defer></script>
-  <script src="assets/js/visualizer.js" defer></script>
+  <link rel="stylesheet" href="assets/css/visualizer.css?v=20261126">
+  <script src="assets/js/solver.js?v=20261126" defer></script>
+  <script src="assets/js/puzzles.js?v=20261126" defer></script>
+  <script src="assets/js/visualizer.js?v=20261126" defer></script>
 </head>
 
 <body>
@@ -66,7 +66,7 @@
     <div class="hero-text-block">
       <div class="eyebrow-label">THE ART OF LOGIC</div>
       <h1 class="hero-headline">Every solution tells a story.</h1>
-      <p class="hero-subtitle">Explore the decisions behind the answer across any puzzle size, one thoughtful step at a time.</p>
+      <p class="hero-subtitle">Explore every solver decision across any puzzle size, step by step.</p>
     </div>
 
     <div class="hero-actions">
@@ -199,14 +199,29 @@
       <!-- 3. Call Stack Card (White) -->
       <div class="card-stack">
         <div class="stack-header-row">
-          <h3 class="section-title" style="margin-bottom:0;">Call stack</h3>
+          <div class="stack-title-group">
+            <h3 class="section-title" style="margin-bottom:0;">Call stack</h3>
+            <span class="stack-sub-pill">Memory Stack · LIFO</span>
+          </div>
           <span class="stack-meta" id="stack-frame-count">0 FRAMES</span>
         </div>
 
-        <div class="stack-content" id="stack-container">
-          <div class="stack-empty">
-            <div class="stack-empty-main">No active guesses</div>
-            <div class="stack-empty-sub">Solving by constraint propagation</div>
+        <div class="stack-memory-frame">
+          <div class="stack-bound-top">
+            <span class="stack-bound-label">↑ TOP OF STACK (PUSH / POP)</span>
+            <span class="stack-sp-indicator" id="stack-sp-label">SP: EMPTY</span>
+          </div>
+          <div class="stack-scroll-area" id="stack-scroll-area">
+            <div class="stack-vessel" id="stack-container">
+              <div class="stack-empty">
+                <div class="stack-empty-main">Stack empty</div>
+                <div class="stack-empty-sub">Press Play or Next step to invoke <code>solveBoard()</code></div>
+              </div>
+            </div>
+          </div>
+          <div class="stack-bound-base">
+            <span>STACK BASE (BOTTOM)</span>
+            <span>grows upward ↑</span>
           </div>
         </div>
       </div>

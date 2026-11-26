@@ -197,7 +197,21 @@
     if (step.unitType !== null && step.unitIndex !== null) {
       const cells = Solver.getUnitCells(step.unitType, step.unitIndex);
       for (const [ur, uc] of cells) unitSet.add(ur * currentN + uc);
+    } else if ((step.type === EV.NAKED || step.type === EV.GUESS) && step.row !== null && step.col !== null) {
+      const sr = Math.floor(step.row / currentBoxRows) * currentBoxRows;
+      const sc = Math.floor(step.col / currentBoxCols) * currentBoxCols;
+      for (let i = 0; i < currentN; i++) {
+        unitSet.add(step.row * currentN + i);
+        unitSet.add(i * currentN + step.col);
+      }
+      for (let rr = sr; rr < sr + currentBoxRows; rr++) {
+        for (let cc = sc; cc < sc + currentBoxCols; cc++) {
+          unitSet.add(rr * currentN + cc);
+        }
+      }
     }
+
+    const undoneSet = new Set(step.type === EV.BACKTRACK && Array.isArray(step.undone) ? step.undone : []);
 
     const cellEv = new Array(total).fill(null);
     for (let i = 0; i <= idx; i++) {
@@ -225,6 +239,13 @@
       if (isGiven) cell.classList.add('given');
       if (unitSet.has(code)) cell.classList.add('unit-tint');
       if (cellEv[code]) cell.classList.add('ev-' + cellEv[code]);
+      if (step.type === EV.CONTRA) {
+        if (step.row === r && step.col === c) cell.classList.add('ev-contra');
+        else if (step.row === null && unitSet.has(code)) cell.classList.add('ev-contra-unit');
+      } else if (step.type === EV.BACKTRACK) {
+        if (step.row === r && step.col === c) cell.classList.add('ev-backtrack-cell');
+        else if (undoneSet.has(code)) cell.classList.add('ev-undone-cell');
+      }
       if (step.row === r && step.col === c) cell.classList.add('active-cell');
       if (val && !isGiven && cellEv[code]) cell.classList.add('warm-highlight');
 
@@ -286,66 +307,181 @@
 
   function renderStack(step) {
     const container = $('stack-container');
+    const scrollArea = $('stack-scroll-area');
+    const spLabel = $('stack-sp-label');
     const stack = step.stack || [];
 
     $('stack-frame-count').textContent = `${stack.length} FRAME${stack.length !== 1 ? 'S' : ''}`;
 
     if (!stack.length) {
-      container.innerHTML = `
-        <div class="stack-empty">
-          <div class="stack-empty-main">No active guesses</div>
-          <div class="stack-empty-sub">Solving by constraint propagation</div>
-        </div>`;
+      if (spLabel) spLabel.textContent = 'SP: EMPTY';
+      if (step.type === EV.UNSOLVABLE) {
+        const isDuplicate = step.explainShort === 'Duplicate clues detected.';
+        container.innerHTML = `
+          <div class="stack-empty stack-empty-fail">
+            <div class="stack-empty-main">${isDuplicate ? 'Solver not started (invalid board)' : 'Call stack unwound (0 frames)'}</div>
+            <div class="stack-empty-sub">${isDuplicate ? 'Duplicate clues conflict before calling <code>solveBoard()</code>' : 'All recursive calls returned <code>false</code> — no legal solution exists'}</div>
+          </div>`;
+      } else {
+        container.innerHTML = `
+          <div class="stack-empty">
+            <div class="stack-empty-main">Stack empty</div>
+            <div class="stack-empty-sub">Press Play or Next step to invoke <code>solveBoard()</code></div>
+          </div>`;
+      }
+      if (scrollArea) scrollArea.scrollTop = 0;
       return;
     }
 
-    container.innerHTML = '';
-    const display = [...stack].reverse();
+    const topIdx = stack.length - 1;
     const isBacktrackStep = step.type === EV.BACKTRACK;
+    const isContraStep = step.type === EV.CONTRA;
+    const isSolvedStep = step.type === EV.SOLVED;
 
-    display.forEach((frame, di) => {
-      const isTop = di === 0;
-      const isCurrentBacktrack = isTop && isBacktrackStep;
-      const item = document.createElement('div');
+    if (spLabel) {
+      if (isBacktrackStep) spLabel.textContent = `SP → POP #${topIdx}`;
+      else if (isContraStep) spLabel.textContent = `SP → ERR #${topIdx}`;
+      else if (isSolvedStep) spLabel.textContent = `SP → OK #${topIdx}`;
+      else spLabel.textContent = `SP → #${topIdx}`;
+    }
 
-      if (isCurrentBacktrack) {
-        item.className = 'stack-frame-item frame-backtrack active';
-        item.innerHTML = `
-          <div style="display:flex; align-items:center; gap:0.45rem;">
-            <span class="frame-badge frame-badge-backtrack">D${frame.depth} · ↶ BACKTRACK</span>
-            <span style="font-weight:600; color:#7e22ce;">R${frame.row + 1}C${frame.col + 1}</span>
-            <span style="color:#9333ea; font-weight:600;">failed <b>${frame.val}</b></span>
-          </div>
-          <span style="font-size:0.73rem; color:#7e22ce;">rem: ${frame.remaining && frame.remaining.length ? frame.remaining.join(', ') : 'none'}</span>
-        `;
-      } else if (isTop) {
-        item.className = 'stack-frame-item frame-guess active';
-        item.innerHTML = `
-          <div style="display:flex; align-items:center; gap:0.45rem;">
-            <span class="frame-badge frame-badge-guess">D${frame.depth} · <svg class="line-icon-sm" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.5 3.5 9H8l-1 5.5L12.5 7H8l1-5.5Z"/></svg> MRV GUESS</span>
-            <span style="font-weight:600; color:var(--c-forest);">R${frame.row + 1}C${frame.col + 1}</span>
-            <span style="color:#b45309; font-weight:600;">trying <b>${frame.val}</b></span>
-          </div>
-          <span style="font-size:0.73rem; color:var(--text-muted);">of ${frame.candidates.join(', ')}</span>
-        `;
+    container.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    for (let i = topIdx; i >= 0; i--) {
+      const frame = stack[i];
+      const isTop = i === topIdx;
+      const isResumingCaller = isBacktrackStep && i === topIdx - 1;
+      const fnLabel = frame.isRoot
+        ? 'solveBoard(init)'
+        : `solveBoard(R${frame.row + 1}C${frame.col + 1} = ${frame.val})`;
+
+      let ptrText = '│';
+      let stateClass = 'mem-frame-waiting';
+      let badgeText = `D${frame.depth} · WAITING`;
+      let badgeClass = 'frame-badge-parent';
+      let detailText = '';
+
+      if (isTop) {
+        if (isBacktrackStep) {
+          ptrText = 'POP ↶';
+          stateClass = 'mem-frame-backtrack active';
+          badgeText = `D${frame.depth} · ↶ POP`;
+          badgeClass = 'frame-badge-backtrack';
+          const remNote = frame.remaining && frame.remaining.length
+            ? `next: ${frame.remaining[0]}`
+            : 'no options left';
+          detailText = `return false · failed ${frame.val} · ${remNote}`;
+        } else if (isContraStep) {
+          ptrText = 'SP →';
+          stateClass = 'mem-frame-contra active';
+          badgeText = `D${frame.depth} · ✕ DEAD END`;
+          badgeClass = 'frame-badge-contra';
+          detailText = frame.isRoot
+            ? 'contradiction at root · returning false'
+            : `contradiction · failed ${frame.val} of [${frame.candidates.join(', ')}]`;
+        } else if (isSolvedStep) {
+          ptrText = 'SP →';
+          stateClass = 'mem-frame-solved active';
+          badgeText = `D${frame.depth} · ✓ SOLVED`;
+          badgeClass = 'frame-badge-solved';
+          detailText = frame.isRoot
+            ? 'all units satisfied · return true'
+            : `confirmed ${frame.val} · return true`;
+        } else if (step.type === EV.GUESS) {
+          ptrText = 'SP →';
+          stateClass = 'mem-frame-guess active';
+          badgeText = `D${frame.depth} · GUESS`;
+          badgeClass = 'frame-badge-guess';
+          const remStr = frame.remaining && frame.remaining.length
+            ? `rem: ${frame.remaining.join(', ')}`
+            : 'rem: none';
+          detailText = `trying ${frame.val} of [${frame.candidates.join(', ')}] · ${remStr}`;
+        } else {
+          ptrText = 'SP →';
+          stateClass = 'mem-frame-active active';
+          badgeText = `D${frame.depth} · ACTIVE`;
+          badgeClass = 'frame-badge-active';
+          detailText = frame.isRoot
+            ? 'constraint propagation (singles)'
+            : `guess ${frame.val} of [${frame.candidates.join(', ')}] · propagating`;
+        }
+      } else if (isResumingCaller) {
+        ptrText = 'RET ↵';
+        stateClass = 'mem-frame-resuming';
+        badgeText = `D${frame.depth} · RESUMING`;
+        badgeClass = 'frame-badge-resume';
+        const popped = stack[topIdx];
+        const targetCell = `R${popped.row + 1}C${popped.col + 1}`;
+        const nextAction = popped.remaining && popped.remaining.length
+          ? `trying ${targetCell}=${popped.remaining[0]} next`
+          : `${targetCell} exhausted · unwinding`;
+        detailText = frame.isRoot
+          ? `caller ← false from ${targetCell}=${popped.val} · ${nextAction}`
+          : `chose ${frame.val} · caller ← false · ${nextAction}`;
+      } else if (isSolvedStep) {
+        ptrText = '│';
+        stateClass = 'mem-frame-solved-caller';
+        badgeText = `D${frame.depth} · ✓ OK`;
+        badgeClass = 'frame-badge-solved';
+        detailText = frame.isRoot
+          ? 'initial call · returning true'
+          : `chose ${frame.val} of [${frame.candidates.join(', ')}] · returning true`;
       } else {
-        item.className = 'stack-frame-item';
-        item.innerHTML = `
-          <div style="display:flex; align-items:center; gap:0.45rem;">
-            <span class="frame-badge frame-badge-parent">D${frame.depth}</span>
-            <span style="font-weight:600; color:var(--c-forest);">R${frame.row + 1}C${frame.col + 1}</span>
-            <span style="color:var(--text-muted);">chose <b>${frame.val}</b></span>
-          </div>
-          <span style="font-size:0.73rem; color:var(--text-muted);">${frame.candidates.join(', ')}</span>
-        `;
+        detailText = frame.isRoot
+          ? 'initial call · waiting on child frame'
+          : `chose ${frame.val} of [${frame.candidates.join(', ')}] · awaiting return`;
       }
 
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
-        getCell(frame.row, frame.col)?.classList.add('active-cell');
-      });
-      container.appendChild(item);
-    });
+      const item = document.createElement('div');
+      item.className = `mem-frame ${stateClass}`;
+      item.title = frame.isRoot
+        ? `Frame #${i} · ${fnLabel} · ${detailText}`
+        : `Frame #${i} · ${fnLabel} · ${detailText} (click to highlight cell)`;
+
+      const gutter = document.createElement('div');
+      gutter.className = 'mem-frame-gutter';
+      gutter.innerHTML = `<span class="mem-ptr">${ptrText}</span><span class="mem-slot">#${i}</span>`;
+
+      const body = document.createElement('div');
+      body.className = 'mem-frame-body';
+
+      const topRow = document.createElement('div');
+      topRow.className = 'mem-frame-top';
+
+      const sigEl = document.createElement('span');
+      sigEl.className = 'mem-fn-sig';
+      sigEl.textContent = fnLabel;
+
+      const badgeEl = document.createElement('span');
+      badgeEl.className = `frame-badge ${badgeClass}`;
+      badgeEl.textContent = badgeText;
+
+      topRow.appendChild(sigEl);
+      topRow.appendChild(badgeEl);
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'mem-frame-meta';
+      metaEl.textContent = detailText;
+
+      body.appendChild(topRow);
+      body.appendChild(metaEl);
+
+      item.appendChild(gutter);
+      item.appendChild(body);
+
+      if (!frame.isRoot && frame.row !== null && frame.col !== null) {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.cell').forEach(cl => cl.classList.remove('active-cell'));
+          getCell(frame.row, frame.col)?.classList.add('active-cell');
+        });
+      }
+
+      frag.appendChild(item);
+    }
+
+    container.appendChild(frag);
+    if (scrollArea) scrollArea.scrollTop = 0;
   }
 
   function updateStats(idx) {
