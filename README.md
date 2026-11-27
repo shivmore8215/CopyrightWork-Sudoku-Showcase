@@ -12,34 +12,34 @@ Use this quick key to read every shortcut, label, and memory-stack symbol shown 
 
 #### Keyboard Shortcuts
 
-| Mode                  | Shortcut                         | Action                                                               |
-| --------------------- | -------------------------------- | -------------------------------------------------------------------- |
-| **Playback**          | `Space`                          | Play / Pause automatic step-by-step animation                        |
-| **Playback**          | `→` / `←`                        | Step forward (`Next step`) or backward (`Previous`) one decision     |
-| **Playback**          | `Home` / `End`                   | Jump to `Step 0` (initial board) or jump to the final solved step    |
-| **Global**            | `Esc`                            | Close any open dialog modal                                          |
-| **Edit Grid**         | `1`–`9` _(or multi-digit `1`–`N`)_ | Enter a clue into the selected cell (`0` clears)                     |
-| **Edit Grid**         | `Backspace` / `Delete`           | Clear the selected cell                                              |
-| **Edit Grid**         | `←` `→` `↑` `↓`                  | Move the active cell cursor across the grid                          |
-| **Edit Grid**         | `Enter` / `Esc`                  | Finish editing (`Done Editing`) and run the solver                   |
+| Mode          | Shortcut                           | Action                                                            |
+| ------------- | ---------------------------------- | ----------------------------------------------------------------- |
+| **Playback**  | `Space`                            | Play / Pause automatic step-by-step animation                     |
+| **Playback**  | `→` / `←`                          | Step forward (`Next step`) or backward (`Previous`) one decision  |
+| **Playback**  | `Home` / `End`                     | Jump to `Step 0` (initial board) or jump to the final solved step |
+| **Global**    | `Esc`                              | Close any open dialog modal                                       |
+| **Edit Grid** | `1`–`9` _(or multi-digit `1`–`N`)_ | Enter a clue into the selected cell (`0` clears)                  |
+| **Edit Grid** | `Backspace` / `Delete`             | Clear the selected cell                                           |
+| **Edit Grid** | `←` `→` `↑` `↓`                    | Move the active cell cursor across the grid                       |
+| **Edit Grid** | `Enter` / `Esc`                    | Finish editing (`Done Editing`) and run the solver                |
 
 #### Visual Shorthands & Memory Call Stack Symbols
 
-| Shortcut / Symbol          | Meaning in the Visualizer                                                                                   |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **`R#C#`** _(e.g., `R1C3`)_ | 1-based grid coordinate: **R**ow `#`, **C**olumn `#` (e.g., `R1C3 = 2` means Row 1, Column 3 set to `2`)   |
-| **`N×N · R×C boxes`**      | Full board dimension (`N×N`) tiled by sub-grid boxes of `R` rows × `C` columns (e.g., `9×9 · 3×3 boxes`)    |
-| **`MRV`**                  | **Minimum Remaining Values** — chooses the empty cell with the fewest legal candidates when guessing        |
-| **`LIFO`**                 | **Last-In, First-Out** — placements and stack frames unwind in exact reverse order during backtracking      |
-| **`D0`, `D1`, `D2`…**      | **Recursion Depth** (`D0` = pure deduction with 0 guesses; `D1+` = nested hypothesis depths)                |
-| **`solveBoard(init)`**     | Root function call at **`STACK BASE (BOTTOM)`** running initial constraint propagation                      |
-| **`solveBoard(R#C# = v)`** | Recursive call frame testing guess `v` at cell `R#C#` (stacked upward toward **`↑ TOP OF STACK`**)         |
-| **`#0`, `#1`, `#2`…**      | Memory stack frame slots ordered from bottom (`#0`) to top                                                  |
-| **`SP →`**                 | **Stack Pointer** highlighting the currently executing top frame (`ERR #k` on dead end, `OK #k` when solved) |
-| **`POP ↶`**                | Top frame failing (`return false`) and popping off the memory stack during a **Backtrack** step             |
-| **`RET ↵`**                | Immediate caller frame receiving `false` from the popped child and **`RESUMING`**                           |
-| **`│`**                    | Paused parent frame **`WAITING`** below on an active deeper recursive call                                  |
-| **`rem:`**                 | Remaining untested candidate values for that guessed cell (e.g., `rem: 3` or `rem: none`)                  |
+| Shortcut / Symbol           | Meaning in the Visualizer                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **`R#C#`** _(e.g., `R1C3`)_ | 1-based grid coordinate: **R**ow `#`, **C**olumn `#` (e.g., `R1C3 = 2` means Row 1, Column 3 set to `2`)     |
+| **`N×N · R×C boxes`**       | Full board dimension (`N×N`) tiled by sub-grid boxes of `R` rows × `C` columns (e.g., `9×9 · 3×3 boxes`)     |
+| **`MRV`**                   | **Minimum Remaining Values** — chooses the empty cell with the fewest legal candidates when guessing         |
+| **`LIFO`**                  | **Last-In, First-Out** — placements and stack frames unwind in exact reverse order during backtracking       |
+| **`D0`, `D1`, `D2`…**       | **Recursion Depth** (`D0` = pure deduction with 0 guesses; `D1+` = nested hypothesis depths)                 |
+| **`solveBoard(init)`**      | Root function call at **`STACK BASE (BOTTOM)`** running initial constraint propagation                       |
+| **`solveBoard(R#C# = v)`**  | Recursive call frame testing guess `v` at cell `R#C#` (stacked upward toward **`↑ TOP OF STACK`**)           |
+| **`#0`, `#1`, `#2`…**       | Memory stack frame slots ordered from bottom (`#0`) to top                                                   |
+| **`SP →`**                  | **Stack Pointer** highlighting the currently executing top frame (`ERR #k` on dead end, `OK #k` when solved) |
+| **`POP ↶`**                 | Top frame failing (`return false`) and popping off the memory stack during a **Backtrack** step              |
+| **`RET ↵`**                 | Immediate caller frame receiving `false` from the popped child and **`RESUMING`**                            |
+| **`│`**                     | Paused parent frame **`WAITING`** below on an active deeper recursive call                                   |
+| **`rem:`**                  | Remaining untested candidate values for that guessed cell (e.g., `rem: 3` or `rem: none`)                    |
 
 _(Tip: Click any guess frame inside the **Call stack** panel to jump focus to that cell on the grid, or toggle **Pencil marks** to inspect live legal candidates in every blank cell.)_
 
@@ -57,7 +57,7 @@ _(Tip: Click any guess frame inside the **Call stack** panel to jump focus to th
 8. [Methodology 6: Recursive Backtracking & the LIFO Undo Log](#8-methodology-6-recursive-backtracking--the-lifo-undo-log)
 9. [Under the Hood: All 11 Core Algorithmic Optimizations](#9-under-the-hood-all-11-core-algorithmic-optimizations)
 10. [End-to-End Architecture & Puzzle Benchmarks](#10-end-to-end-architecture--puzzle-benchmarks)
-11. [Repository Files, Authors & How to Run](#11-repository-files-authors--how-to-run)
+11. [Repository Files, Authors & How to Run](#11-repository-authors)
 
 ---
 
