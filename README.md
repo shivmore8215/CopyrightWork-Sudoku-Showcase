@@ -57,7 +57,7 @@ _(Tip: Click any guess frame inside the **Call stack** panel to jump focus to th
 8. [Methodology 6: Recursive Backtracking & the LIFO Undo Log](#8-methodology-6-recursive-backtracking--the-lifo-undo-log)
 9. [Under the Hood: All 11 Core Algorithmic Optimizations](#9-under-the-hood-all-11-core-algorithmic-optimizations)
 10. [End-to-End Architecture & Puzzle Benchmarks](#10-end-to-end-architecture--puzzle-benchmarks)
-11. [Repository Files, Authors & How to Run](#11-repository-authors)
+11. [Repository Authors](#11-repository-authors)
 
 ---
 
